@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Task } from "@/lib/dataStore";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 interface Props {
   tasks: Task[];
@@ -9,6 +10,13 @@ interface Props {
 const TaskCard = ({ tasks, onTasksChange }: Props) => {
   const [text, setText] = useState("");
   const [time, setTime] = useState("");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const addTask = () => {
     if (!text.trim()) return;
@@ -20,8 +28,18 @@ const TaskCard = ({ tasks, onTasksChange }: Props) => {
     onTasksChange(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
   };
 
-  const deleteTask = (id: number) => {
-    onTasksChange(tasks.filter(t => t.id !== id));
+  const getTimeLeft = (taskTime: string) => {
+    if (!taskTime) return null;
+    const now = new Date();
+    const [h, m] = taskTime.split(':').map(Number);
+    const target = new Date();
+    target.setHours(h, m, 0, 0);
+    const diff = target.getTime() - now.getTime();
+    if (diff < 0) return "সময় শেষ!";
+    const hours = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    if (hours > 0) return `${hours}ঘ ${mins}মি বাকি`;
+    return `${mins}মি বাকি`;
   };
 
   return (
@@ -33,17 +51,34 @@ const TaskCard = ({ tasks, onTasksChange }: Props) => {
         <button onClick={addTask} className="bg-life-green text-primary-foreground px-4 rounded-xl font-bold hover:opacity-90 transition active:scale-95">যোগ</button>
       </div>
       <ul className="space-y-2 max-h-64 overflow-y-auto no-scrollbar">
-        {tasks.map(t => (
-          <li key={t.id} className="flex justify-between items-center p-3 bg-secondary rounded-xl border border-border group transition">
-            <div className="flex items-center gap-3">
-              <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} className="w-5 h-5 accent-life-green rounded" />
-              <span className={`text-sm font-bold text-foreground ${t.done ? 'completed' : ''}`}>{t.text}</span>
-              <span className="text-[10px] text-muted-foreground font-bold bg-card px-2 py-0.5 rounded">{t.time || 'সময় নাই'}</span>
-            </div>
-            <button onClick={() => deleteTask(t.id)} className="text-destructive/40 hover:text-destructive transition opacity-0 group-hover:opacity-100">🗑️</button>
-          </li>
-        ))}
+        {tasks.map(t => {
+          const timeLeft = !t.done ? getTimeLeft(t.time) : null;
+          return (
+            <li key={t.id} className="flex justify-between items-center p-3 bg-secondary rounded-xl border border-border group transition">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} className="w-5 h-5 accent-life-green rounded shrink-0" />
+                <span className={`text-sm font-bold text-foreground truncate ${t.done ? 'completed' : ''}`}>{t.text}</span>
+                {t.time && (
+                  <span className="text-[10px] text-muted-foreground font-bold bg-card px-2 py-0.5 rounded shrink-0">{t.time}</span>
+                )}
+                {timeLeft && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${timeLeft === 'সময় শেষ!' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
+                    ⏳ {timeLeft}
+                  </span>
+                )}
+              </div>
+              <button onClick={() => setDeleteId(t.id)} className="text-destructive/40 hover:text-destructive transition opacity-0 group-hover:opacity-100 sm:opacity-0 max-sm:opacity-100 ml-2">🗑️</button>
+            </li>
+          );
+        })}
       </ul>
+      <DeleteConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={() => { if (deleteId !== null) { onTasksChange(tasks.filter(t => t.id !== deleteId)); setDeleteId(null); } }}
+        title="কাজটি ডিলেট করবেন?"
+        description="এই কাজটি স্থায়ীভাবে মুছে ফেলা হবে।"
+      />
     </div>
   );
 };

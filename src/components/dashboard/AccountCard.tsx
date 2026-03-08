@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Transaction } from "@/lib/dataStore";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 interface AccountPerson { trans: Transaction[]; }
 interface Props {
@@ -12,6 +13,7 @@ const AccountCard = ({ accounts, onAccountsChange }: Props) => {
   const [activePerson, setActivePerson] = useState<string | null>(null);
   const [tAmt, setTAmt] = useState("");
   const [tNote, setTNote] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const addPerson = () => {
     if (!personName.trim()) return;
@@ -19,10 +21,13 @@ const AccountCard = ({ accounts, onAccountsChange }: Props) => {
     setPersonName("");
   };
 
-  const deletePerson = (name: string) => {
+  const confirmDeletePerson = () => {
+    if (!deleteTarget) return;
     const next = { ...accounts };
-    delete next[name];
+    delete next[deleteTarget];
     onAccountsChange(next);
+    setDeleteTarget(null);
+    if (activePerson === deleteTarget) setActivePerson(null);
   };
 
   const addTrans = (type: 'pawa' | 'dena') => {
@@ -49,8 +54,8 @@ const AccountCard = ({ accounts, onAccountsChange }: Props) => {
           {Object.keys(accounts).map(name => {
             const bal = getBalance(name);
             return (
-              <div key={name} onClick={() => setActivePerson(name)} className={`relative group p-4 border-2 rounded-2xl text-center cursor-pointer transition hover:shadow-md ${bal > 0 ? 'bg-life-emerald-light border-life-emerald/20 text-life-emerald' : bal < 0 ? 'bg-life-red-light border-destructive/20 text-destructive' : 'bg-secondary border-border text-foreground'}`}>
-                <button onClick={e => { e.stopPropagation(); deletePerson(name); }} className="absolute top-1 right-1 text-destructive/30 hover:text-destructive opacity-0 group-hover:opacity-100 transition text-xs">✕</button>
+              <div key={name} onClick={() => setActivePerson(name)} className={`relative group p-4 border-2 rounded-xl text-center cursor-pointer transition hover:shadow-md ${bal > 0 ? 'bg-life-emerald-light border-life-emerald/20 text-life-emerald' : bal < 0 ? 'bg-life-red-light border-destructive/20 text-destructive' : 'bg-secondary border-border text-foreground'}`}>
+                <button onClick={e => { e.stopPropagation(); setDeleteTarget(name); }} className="absolute top-1.5 right-1.5 text-destructive/40 hover:text-destructive opacity-0 group-hover:opacity-100 max-sm:opacity-100 transition text-sm">🗑️</button>
                 <div className="font-bold text-sm truncate mb-1">{name}</div>
                 <div className="font-black text-base">৳{Math.abs(bal)}</div>
               </div>
@@ -59,16 +64,16 @@ const AccountCard = ({ accounts, onAccountsChange }: Props) => {
         </div>
       </div>
 
-      {activePerson && (
+      {activePerson && accounts[activePerson] && (
         <div className="fixed inset-0 bg-foreground/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setActivePerson(null)}>
-          <div className="bg-card rounded-3xl w-full max-w-md p-6 shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
+          <div className="bg-card rounded-2xl w-full max-w-md p-6 shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-foreground">{activePerson}</h3>
               <button onClick={() => setActivePerson(null)} className="text-muted-foreground hover:text-destructive text-2xl">✕</button>
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-life-emerald-light p-3 rounded-2xl text-center"><p className="text-[10px] font-bold text-life-emerald uppercase">পাওনা</p><p className="text-lg font-black text-life-emerald">৳{accounts[activePerson].trans.filter(t => t.type === 'pawa').reduce((s, t) => s + t.amount, 0)}</p></div>
-              <div className="bg-life-red-light p-3 rounded-2xl text-center"><p className="text-[10px] font-bold text-destructive uppercase">দেনা</p><p className="text-lg font-black text-destructive">৳{accounts[activePerson].trans.filter(t => t.type === 'dena').reduce((s, t) => s + t.amount, 0)}</p></div>
+              <div className="bg-life-emerald-light p-3 rounded-xl text-center"><p className="text-[10px] font-bold text-life-emerald uppercase">পাওনা</p><p className="text-lg font-black text-life-emerald">৳{accounts[activePerson].trans.filter(t => t.type === 'pawa').reduce((s, t) => s + t.amount, 0)}</p></div>
+              <div className="bg-life-red-light p-3 rounded-xl text-center"><p className="text-[10px] font-bold text-destructive uppercase">দেনা</p><p className="text-lg font-black text-destructive">৳{accounts[activePerson].trans.filter(t => t.type === 'dena').reduce((s, t) => s + t.amount, 0)}</p></div>
             </div>
             <div className="space-y-2 mb-4">
               <input type="number" value={tAmt} onChange={e => setTAmt(e.target.value)} placeholder="টাকা" className="w-full p-3 border border-border rounded-xl font-bold outline-none text-foreground bg-secondary" />
@@ -93,6 +98,14 @@ const AccountCard = ({ accounts, onAccountsChange }: Props) => {
           </div>
         </div>
       )}
+
+      <DeleteConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={confirmDeletePerson}
+        title={`"${deleteTarget}" ডিলেট করবেন?`}
+        description="এই ব্যক্তির সমস্ত লেনদেন মুছে যাবে।"
+      />
     </>
   );
 };

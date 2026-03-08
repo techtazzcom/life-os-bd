@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Expense } from "@/lib/dataStore";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 interface Props {
   expenses: Expense[];
@@ -9,6 +10,7 @@ interface Props {
 const ExpenseCard = ({ expenses, onExpensesChange }: Props) => {
   const [amt, setAmt] = useState("");
   const [note, setNote] = useState("");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const total = expenses.reduce((s, e) => s + e.amt, 0);
 
   const addExpense = () => {
@@ -33,7 +35,7 @@ const ExpenseCard = ({ expenses, onExpensesChange }: Props) => {
             <span className="font-bold text-foreground">{e.note}</span>
             <div className="flex items-center gap-2">
               <span className="text-life-teal font-black">৳{e.amt}</span>
-              <button onClick={() => onExpensesChange(expenses.filter(x => x.id !== e.id))} className="text-destructive/40 hover:text-destructive transition text-xs">🗑️</button>
+              <button onClick={() => setDeleteId(e.id)} className="text-destructive/40 hover:text-destructive transition text-xs">🗑️</button>
             </div>
           </li>
         ))}
@@ -42,6 +44,12 @@ const ExpenseCard = ({ expenses, onExpensesChange }: Props) => {
         <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">মোট</span>
         <span className="font-black text-life-teal">৳{total}</span>
       </div>
+      <DeleteConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={() => { if (deleteId !== null) { onExpensesChange(expenses.filter(x => x.id !== deleteId)); setDeleteId(null); } }}
+        title="খরচটি ডিলেট করবেন?"
+      />
     </div>
   );
 };

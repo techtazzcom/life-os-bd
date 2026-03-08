@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PermNote } from "@/lib/dataStore";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 interface Props {
   notes: PermNote[];
@@ -11,6 +12,7 @@ const PermNoteCard = ({ notes, onNotesChange }: Props) => {
   const [desc, setDesc] = useState("");
   const [search, setSearch] = useState("");
   const [viewNote, setViewNote] = useState<PermNote | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const addNote = () => {
     if (!title || !desc) return;
@@ -39,7 +41,7 @@ const PermNoteCard = ({ notes, onNotesChange }: Props) => {
                 <h4 className="font-bold text-sm mb-1 text-foreground">{n.title}</h4>
                 <p className="text-[10px] text-muted-foreground line-clamp-1">{n.desc}</p>
               </div>
-              <button onClick={e => { e.stopPropagation(); onNotesChange(notes.filter(x => x.id !== n.id)); }} className="text-destructive/40 hover:text-destructive transition text-xs ml-2">🗑️</button>
+              <button onClick={e => { e.stopPropagation(); setDeleteId(n.id); }} className="text-destructive/40 hover:text-destructive transition text-xs ml-2">🗑️</button>
             </div>
           ))}
         </div>
@@ -47,7 +49,7 @@ const PermNoteCard = ({ notes, onNotesChange }: Props) => {
 
       {viewNote && (
         <div className="fixed inset-0 bg-foreground/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setViewNote(null)}>
-          <div className="bg-card rounded-3xl w-full max-w-lg p-8 shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
+          <div className="bg-card rounded-2xl w-full max-w-lg p-8 shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-6">
               <h3 className="text-2xl font-black text-foreground">{viewNote.title}</h3>
               <button onClick={() => setViewNote(null)} className="text-muted-foreground hover:text-destructive text-2xl">✕</button>
@@ -56,6 +58,14 @@ const PermNoteCard = ({ notes, onNotesChange }: Props) => {
           </div>
         </div>
       )}
+
+      <DeleteConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={() => { if (deleteId !== null) { onNotesChange(notes.filter(x => x.id !== deleteId)); setDeleteId(null); } }}
+        title="নোটটি ডিলেট করবেন?"
+        description="এই স্থায়ী নোটটি মুছে ফেলা হবে।"
+      />
     </>
   );
 };

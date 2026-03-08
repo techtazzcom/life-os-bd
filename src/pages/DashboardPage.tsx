@@ -20,6 +20,7 @@ import AccountCard from "@/components/dashboard/AccountCard";
 import AIAssistant from "@/components/dashboard/AIAssistant";
 import SettingsModal from "@/components/dashboard/SettingsModal";
 import ProfileModal from "@/components/dashboard/ProfileModal";
+import NoDataDialog from "@/components/dashboard/NoDataDialog";
 
 const defaultDayData: DayData = {
   mood: '', water: 0, tasks: [], expenses: [],
@@ -39,6 +40,7 @@ const DashboardPage = () => {
   const [extraSettings, setExtraSettings] = useState<ExtraSettings>({ dailyLimit: 500, monthlyLimit: 15000, sleepTime: "22:00" });
   const [showSettings, setShowSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showNoData, setShowNoData] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const isToday = selectedDate === getTodayStr();
@@ -48,6 +50,9 @@ const DashboardPage = () => {
       const p = await getProfile();
       setProfile(p);
       const saved = await loadDayData(selectedDate);
+      if (!saved && selectedDate !== getTodayStr()) {
+        setShowNoData(true);
+      }
       setData(saved || defaultDayData);
       setGoalsState(await getGoals());
       setPermNotesState(await getPermNotes());
@@ -95,23 +100,23 @@ const DashboardPage = () => {
   return (
     <div className="bg-background min-h-screen pb-10">
       <NavBar userName={profile?.name || 'User'} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={() => setShowSettings(true)} onProfile={() => setShowProfile(true)} notificationSlot={<NotificationBell data={data} namazTimes={namazTimes} extraSettings={extraSettings} />} />
-      <main className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
-        <AIAssistant data={data} goals={goals} />
+      <main className="max-w-6xl mx-auto p-3 md:p-8 space-y-4 md:space-y-6">
+        <AIAssistant data={data} goals={goals} accounts={data.accounts} />
         <SummaryCards data={data} />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           <MoodTracker mood={data.mood} onMoodChange={m => updateData({ mood: m })} />
           <WaterTracker water={data.water} onWaterChange={w => updateData({ water: w })} />
           <ProgressCard progress={progress} />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          <div className="md:col-span-8 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
+          <div className="md:col-span-8 space-y-4 md:space-y-6">
             <TaskCard tasks={data.tasks} onTasksChange={tasks => updateData({ tasks })} />
             <GoalCard goals={goals} onGoalsChange={updateGoals} />
             <AccountCard accounts={data.accounts} onAccountsChange={accounts => updateData({ accounts })} />
             <PermNoteCard notes={permNotes} onNotesChange={updatePermNotes} />
             <DiaryCard notebooks={data.notebooks} activeNoteId={data.activeNoteId} onUpdate={(notebooks, activeNoteId) => updateData({ notebooks, activeNoteId })} />
           </div>
-          <div className="md:col-span-4 space-y-6">
+          <div className="md:col-span-4 space-y-4 md:space-y-6">
             <NamazTracker namaz={data.namaz} onNamazChange={namaz => updateData({ namaz })} />
             <ExpenseCard expenses={data.expenses} onExpensesChange={expenses => updateData({ expenses })} />
             <HabitCard habits={data.habits} onHabitsChange={habits => updateData({ habits })} />
@@ -122,6 +127,7 @@ const DashboardPage = () => {
       </main>
       {showSettings && <SettingsModal habits={data.habits} onHabitsChange={habits => updateData({ habits })} onClose={() => setShowSettings(false)} />}
       {showProfile && profile && <ProfileModal user={profile} onClose={() => { setShowProfile(false); getProfile().then(setProfile); }} onLogout={handleLogout} />}
+      <NoDataDialog open={showNoData} onOpenChange={setShowNoData} date={selectedDate} />
     </div>
   );
 };

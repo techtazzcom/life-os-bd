@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Goal } from "@/lib/dataStore";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 interface Props {
   goals: Goal[];
@@ -9,6 +10,7 @@ interface Props {
 const GoalCard = ({ goals, onGoalsChange }: Props) => {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -28,7 +30,8 @@ const GoalCard = ({ goals, onGoalsChange }: Props) => {
     const d = Math.floor(diff / 86400000);
     const h = Math.floor((diff % 86400000) / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
-    return `${d} দিন ${h} ঘণ্টা ${m} মি.`;
+    const s = Math.floor((diff % 60000) / 1000);
+    return `${d} দিন ${h} ঘণ্টা ${m} মি. ${s} সে.`;
   };
 
   return (
@@ -40,16 +43,29 @@ const GoalCard = ({ goals, onGoalsChange }: Props) => {
         <button onClick={addGoal} className="bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold hover:opacity-90 transition active:scale-95">সেট</button>
       </div>
       <div className="space-y-3">
-        {goals.map(g => (
-          <div key={g.id} className="flex justify-between items-center p-4 bg-secondary rounded-2xl border border-border">
-            <div>
-              <h4 className="font-bold text-sm text-foreground">{g.title}</h4>
-              <p className="text-xs font-bold text-primary mt-1">{getTimeLeft(g.target)}</p>
+        {goals.map(g => {
+          const timeLeft = getTimeLeft(g.target);
+          const isExpired = timeLeft === "সময় শেষ!";
+          return (
+            <div key={g.id} className="flex justify-between items-center p-4 bg-secondary rounded-2xl border border-border">
+              <div className="min-w-0 flex-1">
+                <h4 className="font-bold text-sm text-foreground">{g.title}</h4>
+                <p className={`text-xs font-bold mt-1 tabular-nums ${isExpired ? 'text-destructive' : 'text-primary'}`}>
+                  ⏳ {timeLeft}
+                </p>
+              </div>
+              <button onClick={() => setDeleteId(g.id)} className="text-destructive/40 hover:text-destructive transition ml-2">🗑️</button>
             </div>
-            <button onClick={() => onGoalsChange(goals.filter(x => x.id !== g.id))} className="text-destructive/40 hover:text-destructive transition">🗑️</button>
-          </div>
-        ))}
+          );
+        })}
       </div>
+      <DeleteConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={() => { if (deleteId !== null) { onGoalsChange(goals.filter(x => x.id !== deleteId)); setDeleteId(null); } }}
+        title="লক্ষ্যটি ডিলেট করবেন?"
+        description="এই লক্ষ্যটি স্থায়ীভাবে মুছে ফেলা হবে।"
+      />
     </div>
   );
 };
