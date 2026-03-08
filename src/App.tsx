@@ -68,6 +68,7 @@ const App = () => (
           <Route path="/feed" element={<ProtectedRoute><FeedPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </CallProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
