@@ -1,0 +1,470 @@
+import { useState, useEffect, useRef, useCallback, createContext, useContext, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface CallState {
+  isInCall: boolean;
+  isCalling: boolean;
+  isReceiving: boolean;
+  callType: "audio" | "video";
+  remoteUser: { user_id: string; name: string } | null;
+  isMuted: boolean;
+  isVideoOff: boolean;
+  callDuration: number;
+}
+
+interface CallContextType {
+  callState: CallState;
+  startCall: (userId: string, userName: string, type: "audio" | "video") => void;
+  endCall: () => void;
+  acceptCall: () => void;
+  rejectCall: () => void;
+  toggleMute: () => void;
+  toggleVideo: () => void;
+}
+
+const CallContext = createContext<CallContextType | null>(null);
+export const useCall = () => useContext(CallContext)!;
+
+const ICE_SERVERS = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+];
+
+const RINGTONE_FREQ = [440, 554, 659];
+
+export const CallProvider = ({ children }: { children: ReactNode }) => {
+  const [callState, setCallState] = useState<CallState>({
+    isInCall: false, isCalling: false, isReceiving: false,
+    callType: "audio", remoteUser: null, isMuted: false, isVideoOff: false, callDuration: 0,
+  });
+
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const currentUserIdRef = useRef("");
+  const callSessionRef = useRef<string>("");
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const ringtoneRef = useRef<AudioContext | null>(null);
+  const ringtoneOscRef = useRef<OscillatorNode[]>([]);
+  const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) currentUserIdRef.current = user.id;
+    });
+  }, []);
+
+  const playRingtone = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      ringtoneRef.current = ctx;
+      const gainNode = ctx.createGain();
+      gainNode.gain.value = 0.1;
+      gainNode.connect(ctx.destination);
+
+      RINGTONE_FREQ.forEach(freq => {
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        osc.connect(gainNode);
+        osc.start();
+        ringtoneOscRef.current.push(osc);
+      });
+    } catch {}
+  }, []);
+
+  const stopRingtone = useCallback(() => {
+    ringtoneOscRef.current.forEach(o => { try { o.stop(); } catch {} });
+    ringtoneOscRef.current = [];
+    if (ringtoneRef.current) { try { ringtoneRef.current.close(); } catch {} ringtoneRef.current = null; }
+  }, []);
+
+  const cleanup = useCallback(() => {
+    stopRingtone();
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; }
+    if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
+    remoteStreamRef.current = null;
+    pendingCandidatesRef.current = [];
+    callSessionRef.current = "";
+    setCallState({ isInCall: false, isCalling: false, isReceiving: false, callType: "audio", remoteUser: null, isMuted: false, isVideoOff: false, callDuration: 0 });
+  }, [stopRingtone]);
+
+  const createPeerConnection = useCallback((remoteUserId: string) => {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    pcRef.current = pc;
+
+    const remoteStream = new MediaStream();
+    remoteStreamRef.current = remoteStream;
+
+    pc.ontrack = (e) => {
+      e.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
+    };
+
+    pc.onicecandidate = async (e) => {
+      if (e.candidate) {
+        await supabase.from("call_signals").insert({
+          caller_id: currentUserIdRef.current,
+          receiver_id: remoteUserId,
+          signal_type: "ice-candidate",
+          signal_data: { candidate: e.candidate.toJSON() } as any,
+          call_type: callState.callType,
+        });
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
+        cleanup();
+      }
+    };
+
+    return pc;
+  }, [callState.callType, cleanup]);
+
+  const startCall = useCallback(async (userId: string, userName: string, type: "audio" | "video") => {
+    const myId = currentUserIdRef.current;
+    if (!myId) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: type === "video",
+      });
+      localStreamRef.current = stream;
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+
+      const sessionId = crypto.randomUUID();
+      callSessionRef.current = sessionId;
+
+      setCallState(s => ({ ...s, isCalling: true, callType: type, remoteUser: { user_id: userId, name: userName } }));
+      playRingtone();
+
+      // Send call-start signal
+      await supabase.from("call_signals").insert({
+        caller_id: myId,
+        receiver_id: userId,
+        signal_type: "call-start",
+        signal_data: { sessionId, callerName: "" } as any,
+        call_type: type,
+      });
+
+      const pc = createPeerConnection(userId);
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      await supabase.from("call_signals").insert({
+        caller_id: myId,
+        receiver_id: userId,
+        signal_type: "offer",
+        signal_data: { sdp: offer.sdp, type: offer.type, sessionId } as any,
+        call_type: type,
+      });
+    } catch (err) {
+      console.error("Call failed:", err);
+      cleanup();
+    }
+  }, [createPeerConnection, playRingtone, cleanup]);
+
+  const acceptCall = useCallback(async () => {
+    if (!callState.remoteUser) return;
+    const myId = currentUserIdRef.current;
+    const remoteId = callState.remoteUser.user_id;
+
+    try {
+      stopRingtone();
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: callState.callType === "video",
+      });
+      localStreamRef.current = stream;
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+
+      const pc = createPeerConnection(remoteId);
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      // Get the offer
+      const { data: offerData } = await supabase
+        .from("call_signals")
+        .select("*")
+        .eq("caller_id", remoteId)
+        .eq("receiver_id", myId)
+        .eq("signal_type", "offer")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (offerData) {
+        const signalData = offerData.signal_data as any;
+        await pc.setRemoteDescription(new RTCSessionDescription({ sdp: signalData.sdp, type: signalData.type }));
+
+        // Apply pending candidates
+        for (const candidate of pendingCandidatesRef.current) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+        }
+        pendingCandidatesRef.current = [];
+
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        await supabase.from("call_signals").insert({
+          caller_id: myId,
+          receiver_id: remoteId,
+          signal_type: "answer",
+          signal_data: { sdp: answer.sdp, type: answer.type } as any,
+          call_type: callState.callType,
+        });
+      }
+
+      setCallState(s => ({ ...s, isInCall: true, isReceiving: false, isCalling: false, callDuration: 0 }));
+      timerRef.current = setInterval(() => {
+        setCallState(s => ({ ...s, callDuration: s.callDuration + 1 }));
+      }, 1000);
+    } catch (err) {
+      console.error("Accept failed:", err);
+      cleanup();
+    }
+  }, [callState.remoteUser, callState.callType, createPeerConnection, stopRingtone, cleanup]);
+
+  const rejectCall = useCallback(async () => {
+    if (!callState.remoteUser) return;
+    stopRingtone();
+    await supabase.from("call_signals").insert({
+      caller_id: currentUserIdRef.current,
+      receiver_id: callState.remoteUser.user_id,
+      signal_type: "call-reject",
+      signal_data: {} as any,
+      call_type: callState.callType,
+    });
+    cleanup();
+  }, [callState.remoteUser, callState.callType, stopRingtone, cleanup]);
+
+  const endCall = useCallback(async () => {
+    if (callState.remoteUser) {
+      await supabase.from("call_signals").insert({
+        caller_id: currentUserIdRef.current,
+        receiver_id: callState.remoteUser.user_id,
+        signal_type: "call-end",
+        signal_data: {} as any,
+        call_type: callState.callType,
+      });
+    }
+    cleanup();
+  }, [callState.remoteUser, callState.callType, cleanup]);
+
+  const toggleMute = useCallback(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = !t.enabled; });
+      setCallState(s => ({ ...s, isMuted: !s.isMuted }));
+    }
+  }, []);
+
+  const toggleVideo = useCallback(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = !t.enabled; });
+      setCallState(s => ({ ...s, isVideoOff: !s.isVideoOff }));
+    }
+  }, []);
+
+  // Listen for incoming signals
+  useEffect(() => {
+    const channel = supabase
+      .channel("call-signals")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals" }, async (payload) => {
+        const signal = payload.new as any;
+        const myId = currentUserIdRef.current;
+        if (!myId) return;
+
+        // Only process signals directed at me
+        if (signal.receiver_id !== myId) return;
+
+        if (signal.signal_type === "call-start") {
+          // Incoming call
+          const { data: callerProfile } = await supabase
+            .from("profiles")
+            .select("name")
+            .eq("user_id", signal.caller_id)
+            .single();
+
+          playRingtone();
+          setCallState(s => ({
+            ...s,
+            isReceiving: true,
+            callType: signal.call_type,
+            remoteUser: { user_id: signal.caller_id, name: callerProfile?.name || "Unknown" },
+          }));
+        }
+
+        if (signal.signal_type === "answer" && pcRef.current) {
+          stopRingtone();
+          const signalData = signal.signal_data as any;
+          await pcRef.current.setRemoteDescription(new RTCSessionDescription({ sdp: signalData.sdp, type: signalData.type }));
+
+          // Apply pending candidates
+          for (const candidate of pendingCandidatesRef.current) {
+            try { await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+          }
+          pendingCandidatesRef.current = [];
+
+          setCallState(s => ({ ...s, isInCall: true, isCalling: false, callDuration: 0 }));
+          timerRef.current = setInterval(() => {
+            setCallState(s => ({ ...s, callDuration: s.callDuration + 1 }));
+          }, 1000);
+        }
+
+        if (signal.signal_type === "ice-candidate") {
+          const candidateData = (signal.signal_data as any).candidate;
+          if (pcRef.current && pcRef.current.remoteDescription) {
+            try { await pcRef.current.addIceCandidate(new RTCIceCandidate(candidateData)); } catch {}
+          } else {
+            pendingCandidatesRef.current.push(candidateData);
+          }
+        }
+
+        if (signal.signal_type === "call-end" || signal.signal_type === "call-reject") {
+          cleanup();
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [playRingtone, stopRingtone, cleanup]);
+
+  const formatDuration = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <CallContext.Provider value={{ callState, startCall, endCall, acceptCall, rejectCall, toggleMute, toggleVideo }}>
+      {children}
+
+      {/* Incoming Call UI */}
+      {callState.isReceiving && !callState.isInCall && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-xl flex items-center justify-center">
+          <div className="bg-card rounded-3xl p-8 shadow-2xl border border-border max-w-sm w-full mx-4 text-center animate-fade-in-up">
+            <div className="w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center text-4xl mb-4 animate-pulse">
+              {callState.callType === "video" ? "📹" : "📞"}
+            </div>
+            <h2 className="text-xl font-black text-foreground mb-1">{callState.remoteUser?.name}</h2>
+            <p className="text-muted-foreground text-sm font-bold mb-6">
+              {callState.callType === "video" ? "ভিডিও কল আসছে..." : "অডিও কল আসছে..."}
+            </p>
+            <div className="flex justify-center gap-6">
+              <button
+                onClick={rejectCall}
+                className="w-16 h-16 bg-destructive rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95 animate-bounce"
+              >
+                📵
+              </button>
+              <button
+                onClick={acceptCall}
+                className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95 animate-bounce"
+                style={{ animationDelay: "0.1s" }}
+              >
+                📞
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Outgoing Call / Ringing UI */}
+      {callState.isCalling && !callState.isInCall && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-xl flex items-center justify-center">
+          <div className="bg-card rounded-3xl p-8 shadow-2xl border border-border max-w-sm w-full mx-4 text-center animate-fade-in-up">
+            <div className="w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center text-4xl mb-4 animate-pulse">
+              {callState.callType === "video" ? "📹" : "📞"}
+            </div>
+            <h2 className="text-xl font-black text-foreground mb-1">{callState.remoteUser?.name}</h2>
+            <p className="text-muted-foreground text-sm font-bold mb-6">কল করা হচ্ছে...</p>
+            <button
+              onClick={endCall}
+              className="w-16 h-16 mx-auto bg-destructive rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95"
+            >
+              📵
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* In-Call UI */}
+      {callState.isInCall && (
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
+          {/* Video area */}
+          {callState.callType === "video" ? (
+            <div className="flex-1 relative">
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="absolute top-4 right-4 w-32 h-44 md:w-40 md:h-56 rounded-2xl object-cover border-2 border-primary shadow-xl"
+              />
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-28 h-28 mx-auto bg-primary/20 rounded-full flex items-center justify-center text-5xl mb-4">
+                  {callState.remoteUser?.name?.charAt(0)?.toUpperCase()}
+                </div>
+                <h2 className="text-2xl font-black text-white mb-2">{callState.remoteUser?.name}</h2>
+                <p className="text-white/60 text-lg font-bold">{formatDuration(callState.callDuration)}</p>
+              </div>
+              {/* Hidden audio elements */}
+              <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
+              <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
+            </div>
+          )}
+
+          {/* Call info bar */}
+          {callState.callType === "video" && (
+            <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 pt-6">
+              <h2 className="text-white font-black text-lg text-center">{callState.remoteUser?.name}</h2>
+              <p className="text-white/60 text-sm font-bold text-center">{formatDuration(callState.callDuration)}</p>
+            </div>
+          )}
+
+          {/* Controls */}
+          <div className="bg-black/90 p-6 pb-8">
+            <div className="flex justify-center items-center gap-5">
+              <button
+                onClick={toggleMute}
+                className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition active:scale-95 ${callState.isMuted ? 'bg-destructive/80 text-white' : 'bg-white/20 text-white'}`}
+              >
+                {callState.isMuted ? "🔇" : "🎤"}
+              </button>
+              {callState.callType === "video" && (
+                <button
+                  onClick={toggleVideo}
+                  className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition active:scale-95 ${callState.isVideoOff ? 'bg-destructive/80 text-white' : 'bg-white/20 text-white'}`}
+                >
+                  {callState.isVideoOff ? "🚫" : "📹"}
+                </button>
+              )}
+              <button
+                onClick={endCall}
+                className="w-16 h-16 bg-destructive rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95"
+              >
+                📵
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </CallContext.Provider>
+  );
+};
