@@ -34,6 +34,16 @@ export interface ActivityLog {
   created_at: string;
 }
 
+export interface Appeal {
+  id: string;
+  user_id: string;
+  appeal_type: string;
+  message: string;
+  status: string;
+  admin_response: string | null;
+  created_at: string;
+}
+
 // Check if current user is admin
 export async function isAdmin(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -79,11 +89,8 @@ export async function updateUserStatus(userId: string, status: string, reason?: 
   }
 
   await supabase.from('profiles').update(updates as any).eq('user_id', userId);
-
-  // Log activity
   await logActivity(user.id, `status_${status}`, userId, { reason, lockDays });
 
-  // Notify user
   const titles: Record<string, string> = {
     active: '✅ অ্যাকাউন্ট সক্রিয়',
     blocked: '🚫 অ্যাকাউন্ট ব্লক',
@@ -93,7 +100,7 @@ export async function updateUserStatus(userId: string, status: string, reason?: 
   const messages: Record<string, string> = {
     active: 'আপনার অ্যাকাউন্ট আবার সক্রিয় করা হয়েছে।',
     blocked: `আপনার অ্যাকাউন্ট ব্লক করা হয়েছে।${reason ? ` কারণ: ${reason}` : ''}`,
-    suspended: `আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে।${reason ? ` কারণ: ${reason}` : ''}`,
+    suspended: `আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে। আপনি পোস্ট করতে পারবেন না।${reason ? ` কারণ: ${reason}` : ''}`,
     locked: `আপনার অ্যাকাউন্ট ${lockDays} দিনের জন্য লক করা হয়েছে।${reason ? ` কারণ: ${reason}` : ''}`,
   };
 
@@ -104,15 +111,9 @@ export async function updateUserStatus(userId: string, status: string, reason?: 
 export async function toggleVerified(userId: string, verified: boolean) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-
   await supabase.from('profiles').update({ is_verified: verified } as any).eq('user_id', userId);
   await logActivity(user.id, verified ? 'verify' : 'unverify', userId, {});
-  await sendAdminNotification(
-    userId,
-    verified ? '✅ অ্যাকাউন্ট ভেরিফাইড' : '❌ ভেরিফিকেশন সরানো হয়েছে',
-    verified ? 'আপনার অ্যাকাউন্ট ভেরিফাই করা হয়েছে!' : 'আপনার অ্যাকাউন্টের ভেরিফিকেশন সরিয়ে নেওয়া হয়েছে।',
-    verified ? 'success' : 'info'
-  );
+  await sendAdminNotification(userId, verified ? '✅ অ্যাকাউন্ট ভেরিফাইড' : '❌ ভেরিফিকেশন সরানো হয়েছে', verified ? 'আপনার অ্যাকাউন্ট ভেরিফাই করা হয়েছে!' : 'আপনার অ্যাকাউন্টের ভেরিফিকেশন সরিয়ে নেওয়া হয়েছে।', verified ? 'success' : 'info');
 }
 
 // Send notification
@@ -122,12 +123,7 @@ export async function sendAdminNotification(userId: string, title: string, messa
 
 // Log admin activity
 async function logActivity(adminId: string, action: string, targetUserId: string, details: any) {
-  await supabase.from('admin_activity_log' as any).insert({
-    admin_id: adminId,
-    action,
-    target_user_id: targetUserId,
-    details,
-  });
+  await supabase.from('admin_activity_log' as any).insert({ admin_id: adminId, action, target_user_id: targetUserId, details });
 }
 
 // Get activity logs
@@ -180,4 +176,48 @@ export async function getAdminStats() {
     verified: users.filter((u: any) => u.is_verified).length,
     online: users.filter((u: any) => u.is_online).length,
   };
+}
+
+// Get all appeals
+export async function getAppeals(): Promise<Appeal[]> {
+  const { data } = await supabase.from('appeals' as any).select('*').order('created_at', { ascending: false });
+  return (data as any[]) || [];
+}
+
+// Update appeal status
+export async function updateAppealStatus(appealId: string, status: string, adminResponse?: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('appeals' as any).update({ status, admin_response: adminResponse || null, updated_at: new Date().toISOString() }).eq('id', appealId);
+  await logActivity(user.id, `appeal_${status}`, null, { appealId, adminResponse });
+}
+
+// Delete user account (via edge function)
+export async function deleteUserAccount(userId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-actions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session?.access_token}`,
+    },
+    body: JSON.stringify({ action: "delete_user", targetUserId: userId }),
+  });
+  
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to delete user");
+  }
+  return true;
+}
+
+// Get user status for feed restrictions
+export async function getMyStatus(): Promise<{ status: string; suspend_reason: string | null }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { status: 'active', suspend_reason: null };
+  const { data } = await supabase.from('profiles').select('status, suspend_reason').eq('user_id', user.id).single();
+  return { status: (data as any)?.status || 'active', suspend_reason: (data as any)?.suspend_reason || null };
 }
