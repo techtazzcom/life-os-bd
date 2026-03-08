@@ -121,19 +121,27 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
                   {profile.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              {/* Online indicator */}
-              {profile.is_online ? (
-                <span className="absolute top-[88px] left-1/2 translate-x-[18px] w-4 h-4 bg-green-500 border-2 border-background rounded-full" />
-              ) : null}
+              {/* Online dot on avatar */}
+              {profile.is_online && (
+                <span className="absolute top-[88px] left-1/2 translate-x-[18px] w-4 h-4 bg-green-500 border-2 border-background rounded-full animate-pulse" />
+              )}
               <DialogHeader>
-                <DialogTitle className="text-xl font-black text-foreground">
+                <DialogTitle className="text-xl font-black text-foreground flex items-center justify-center gap-2">
                   {profile.name}
+                  {profile.is_online && (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-green-500">
+                      <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
+                      অনলাইন
+                    </span>
+                  )}
                 </DialogTitle>
               </DialogHeader>
-              {/* Online status text */}
-              <p className={`text-xs font-bold mt-1 ${profile.is_online ? 'text-green-500' : 'text-muted-foreground'}`}>
-                {profile.is_online ? '🟢 অনলাইন' : `⚫ ${formatLastSeen(profile.last_seen) || 'অফলাইন'}`}
-              </p>
+              {/* Status text */}
+              {!profile.is_online && (
+                <p className="text-xs font-bold mt-1 text-muted-foreground">
+                  ⚫ {formatLastSeen(profile.last_seen) || 'অফলাইন'}
+                </p>
+              )}
               {profile.intro && (
                 <p className="text-xs text-muted-foreground font-semibold mt-2 italic">"{profile.intro}"</p>
               )}

@@ -35,18 +35,28 @@ const ChatPage = () => {
   const [profileOpen, setProfileOpen] = useState(false);
 
   // Get current user & set online
+  const currentUserIdRef = useRef("");
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setCurrentUserId(user.id);
+        currentUserIdRef.current = user.id;
         // Set online
         supabase.from("profiles").update({ is_online: true, last_seen: new Date().toISOString() } as any).eq("user_id", user.id);
       }
     });
-    // Set offline on unmount
+
+    const handleBeforeUnload = () => {
+      if (currentUserIdRef.current) {
+        navigator.sendBeacon && supabase.from("profiles").update({ is_online: false, last_seen: new Date().toISOString() } as any).eq("user_id", currentUserIdRef.current);
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
-      if (currentUserId) {
-        supabase.from("profiles").update({ is_online: false, last_seen: new Date().toISOString() } as any).eq("user_id", currentUserId);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (currentUserIdRef.current) {
+        supabase.from("profiles").update({ is_online: false, last_seen: new Date().toISOString() } as any).eq("user_id", currentUserIdRef.current);
       }
     };
   }, []);
@@ -160,15 +170,16 @@ const ChatPage = () => {
             {selectedUser ? (
               <span className="flex items-center gap-2">
                 <button onClick={() => { setSelectedUser(null); setShowUserList(true); }} className="md:hidden text-muted-foreground text-sm">←</button>
-                <div>
-                  <span
-                    className="hover:text-primary cursor-pointer transition"
-                    onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }}
-                  >{selectedUser.name}</span>
-                  <p className={`text-[11px] font-bold ${selectedUser.is_online ? 'text-green-500' : 'text-muted-foreground'}`}>
-                    {selectedUser.is_online ? '🟢 অনলাইন' : '⚫ অফলাইন'}
-                  </p>
-                </div>
+                <span
+                  className="hover:text-primary cursor-pointer transition"
+                  onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }}
+                >{selectedUser.name}</span>
+                {selectedUser.is_online && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-green-500">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    অনলাইন
+                  </span>
+                )}
               </span>
             ) : "চ্যাট"}
           </h1>
