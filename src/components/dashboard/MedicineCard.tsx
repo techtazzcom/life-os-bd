@@ -67,13 +67,13 @@ const MedicineCard = ({ medicines, doses, onMedicinesChange, onDosesChange }: Pr
 
       {/* Add Medicine Form */}
       <div className="space-y-2 mb-4 bg-life-pink-light p-3 rounded-xl border border-life-pink/20">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-[3fr_2fr] gap-2">
           <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="ওষুধের নাম..." className="w-full p-2.5 rounded-lg bg-card border border-border outline-none text-sm font-bold text-foreground min-w-0" />
           <TimeInput value={time} onChange={setTime} placeholder="HH:MM" className="w-full p-2.5 rounded-lg bg-card border border-border outline-none text-sm font-bold text-muted-foreground" />
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <input type="text" value={dose} onChange={e => setDose(e.target.value)} placeholder="ডোজ" className="w-full p-2.5 rounded-lg bg-card border border-border outline-none text-sm font-bold text-foreground" />
-          <button onClick={addTime} className="w-full bg-life-pink/20 text-life-pink p-2.5 rounded-lg text-sm font-bold hover:bg-life-pink/30 transition">+ সময়</button>
+        <div className="grid grid-cols-[2fr_1fr] gap-2">
+          <input type="text" value={dose} onChange={e => setDose(e.target.value)} placeholder="ডোজ" className="w-full p-2 rounded-lg bg-card border border-border outline-none text-xs font-bold text-foreground" />
+          <button onClick={addTime} className="w-full bg-life-pink/20 text-life-pink p-2 rounded-lg text-xs font-bold hover:bg-life-pink/30 transition">+ সময়</button>
         </div>
         {times.length > 0 && (
           <div className="flex gap-1.5 flex-wrap">
