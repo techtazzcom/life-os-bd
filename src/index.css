@@ -155,9 +155,7 @@
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
+  appearance: auto;
   min-height: 2.75rem;
   color: hsl(var(--foreground));
 }
@@ -168,15 +166,8 @@ input[type="datetime-local"]::-webkit-date-and-time-value {
   text-align: left;
 }
 
-/* Show placeholder when empty on mobile */
-input[type="date"][value=""],
-input[type="time"][value=""],
-input[type="datetime-local"][value=""] {
-  color: hsl(var(--muted-foreground));
-}
-
-input[type="date"]:not([value=""]),
-input[type="time"]:not([value=""]),
-input[type="datetime-local"]:not([value=""]) {
-  color: hsl(var(--foreground));
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  opacity: 0.9;
 }
