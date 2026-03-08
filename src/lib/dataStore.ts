@@ -1,171 +1,120 @@
-// LocalStorage based data management for Life OS
+import { supabase } from "@/integrations/supabase/client";
+import type { DayData, Goal, PermNote, NamazTimes, ExtraSettings } from "./types";
+import type { Json } from "@/integrations/supabase/types";
 
-export interface User {
+export type { DayData, Goal, PermNote, NamazTimes, ExtraSettings };
+export type { Task, Expense, Notebook, Habit, Transaction } from "./types";
+
+export interface UserProfile {
   name: string;
   email: string;
   mobile: string;
   dob: string;
   address: string;
-  password: string;
   blood_group?: string;
   institution?: string;
   hobby?: string;
 }
 
-export interface Task {
-  id: number;
-  text: string;
-  time: string;
-  done: boolean;
+export async function signUp(email: string, password: string, name: string) {
+  const { data, error } = await supabase.auth.signUp({
+    email, password,
+    options: { data: { name }, emailRedirectTo: window.location.origin }
+  });
+  return { data, error };
 }
 
-export interface Expense {
-  id: number;
-  note: string;
-  amt: number;
+export async function signIn(email: string, password: string) {
+  return await supabase.auth.signInWithPassword({ email, password });
 }
 
-export interface Goal {
-  id: number;
-  title: string;
-  target: string;
+export async function signOut() {
+  await supabase.auth.signOut();
 }
 
-export interface Notebook {
-  id: number;
-  title: string;
-  content: string;
+export async function getProfile(): Promise<UserProfile | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from('profiles').select('*').eq('user_id', user.id).single();
+  return data ? { name: data.name, email: data.email, mobile: data.mobile || '', dob: data.dob || '', address: data.address || '', blood_group: data.blood_group || '', institution: data.institution || '', hobby: data.hobby || '' } : null;
 }
 
-export interface PermNote {
-  id: number;
-  title: string;
-  desc: string;
+export async function updateProfile(profile: UserProfile) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('profiles').update({
+    name: profile.name, mobile: profile.mobile, dob: profile.dob,
+    address: profile.address, blood_group: profile.blood_group,
+    institution: profile.institution, hobby: profile.hobby,
+  }).eq('user_id', user.id);
 }
 
-export interface Transaction {
-  type: 'pawa' | 'dena';
-  amount: number;
-  note: string;
+export async function saveDayData(date: string, data: DayData) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('user_data').upsert({
+    user_id: user.id,
+    date_key: date,
+    data_content: data as unknown as Json,
+  }, { onConflict: 'user_id,date_key' });
 }
 
-export interface AccountPerson {
-  trans: Transaction[];
+export async function loadDayData(date: string): Promise<DayData | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from('user_data').select('data_content').eq('user_id', user.id).eq('date_key', date).single();
+  return data ? (data.data_content as unknown as DayData) : null;
 }
 
-export interface Habit {
-  id: number;
-  title: string;
-  checked: boolean;
+async function getSettings() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from('user_settings').select('*').eq('user_id', user.id).single();
+  return data;
 }
 
-export interface DayData {
-  mood: string;
-  water: number;
-  tasks: Task[];
-  expenses: Expense[];
-  accounts: Record<string, AccountPerson>;
-  habits: Habit[];
-  notebooks: Notebook[];
-  activeNoteId: number;
-  namaz: Record<string, boolean>;
-  quickNotesArray: string[];
-  sleepStart: string;
-  sleepEnd: string;
-  sleepHours: number;
+export async function getGoals(): Promise<Goal[]> {
+  const s = await getSettings();
+  return s ? (s.goals as unknown as Goal[]) : [];
 }
 
-export interface ExtraSettings {
-  dailyLimit: number;
-  monthlyLimit: number;
-  sleepTime: string;
+export async function saveGoals(goals: Goal[]) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('user_settings').update({ goals: goals as unknown as Json }).eq('user_id', user.id);
 }
 
-export interface NamazTimes {
-  fajr: string;
-  dhuhr: string;
-  asr: string;
-  maghrib: string;
-  isha: string;
+export async function getPermNotes(): Promise<PermNote[]> {
+  const s = await getSettings();
+  return s ? (s.perm_notes as unknown as PermNote[]) : [];
 }
 
-const getKey = (base: string, email: string) => `${base}_${email}`;
-
-export function getCurrentUser(): User | null {
-  const data = localStorage.getItem('life_os_current_user');
-  return data ? JSON.parse(data) : null;
+export async function savePermNotes(notes: PermNote[]) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('user_settings').update({ perm_notes: notes as unknown as Json }).eq('user_id', user.id);
 }
 
-export function setCurrentUser(user: User) {
-  localStorage.setItem('life_os_current_user', JSON.stringify(user));
+export async function getNamazTimes(): Promise<NamazTimes> {
+  const s = await getSettings();
+  return s ? (s.namaz_times as unknown as NamazTimes) : { fajr: "05:30", dhuhr: "13:30", asr: "16:45", maghrib: "18:20", isha: "20:00" };
 }
 
-export function logoutUser() {
-  localStorage.removeItem('life_os_current_user');
+export async function saveNamazTimes(times: NamazTimes) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('user_settings').update({ namaz_times: times as unknown as Json }).eq('user_id', user.id);
 }
 
-export function registerUser(user: User): boolean {
-  const users: User[] = JSON.parse(localStorage.getItem('life_os_users') || '[]');
-  if (users.find(u => u.email === user.email)) return false;
-  users.push(user);
-  localStorage.setItem('life_os_users', JSON.stringify(users));
-  return true;
+export async function getExtraSettings(): Promise<ExtraSettings> {
+  const s = await getSettings();
+  return s ? (s.extra_settings as unknown as ExtraSettings) : { dailyLimit: 500, monthlyLimit: 15000, sleepTime: "22:00" };
 }
 
-export function loginUser(email: string, password: string): User | null {
-  const users: User[] = JSON.parse(localStorage.getItem('life_os_users') || '[]');
-  return users.find(u => u.email === email && u.password === password) || null;
-}
-
-export function updateUserProfile(updated: User) {
-  const users: User[] = JSON.parse(localStorage.getItem('life_os_users') || '[]');
-  const idx = users.findIndex(u => u.email === updated.email);
-  if (idx >= 0) users[idx] = updated;
-  localStorage.setItem('life_os_users', JSON.stringify(users));
-  setCurrentUser(updated);
-}
-
-export function saveDayData(email: string, date: string, data: DayData) {
-  localStorage.setItem(getKey(`day_${date}`, email), JSON.stringify(data));
-}
-
-export function loadDayData(email: string, date: string): DayData | null {
-  const d = localStorage.getItem(getKey(`day_${date}`, email));
-  return d ? JSON.parse(d) : null;
-}
-
-export function getGoals(email: string): Goal[] {
-  return JSON.parse(localStorage.getItem(getKey('goals', email)) || '[]');
-}
-
-export function saveGoals(email: string, goals: Goal[]) {
-  localStorage.setItem(getKey('goals', email), JSON.stringify(goals));
-}
-
-export function getPermNotes(email: string): PermNote[] {
-  return JSON.parse(localStorage.getItem(getKey('perm_notes', email)) || '[]');
-}
-
-export function savePermNotes(email: string, notes: PermNote[]) {
-  localStorage.setItem(getKey('perm_notes', email), JSON.stringify(notes));
-}
-
-export function getNamazTimes(email: string): NamazTimes {
-  const d = localStorage.getItem(getKey('namaz_times', email));
-  return d ? JSON.parse(d) : { fajr: "05:30", dhuhr: "13:30", asr: "16:45", maghrib: "18:20", isha: "20:00" };
-}
-
-export function saveNamazTimes(email: string, times: NamazTimes) {
-  localStorage.setItem(getKey('namaz_times', email), JSON.stringify(times));
-}
-
-export function getExtraSettings(email: string): ExtraSettings {
-  const d = localStorage.getItem(getKey('extra_settings', email));
-  return d ? JSON.parse(d) : { dailyLimit: 500, monthlyLimit: 15000, sleepTime: "22:00" };
-}
-
-export function saveExtraSettings(email: string, settings: ExtraSettings) {
-  localStorage.setItem(getKey('extra_settings', email), JSON.stringify(settings));
+export async function saveExtraSettings(settings: ExtraSettings) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('user_settings').update({ extra_settings: settings as unknown as Json }).eq('user_id', user.id);
 }
 
 export function getTodayStr(): string {

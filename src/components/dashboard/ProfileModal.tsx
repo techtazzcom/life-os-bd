@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { updateUserProfile, type User } from "@/lib/dataStore";
+import { updateProfile, type UserProfile } from "@/lib/dataStore";
 import { toast } from "sonner";
 
 interface Props {
-  user: User;
+  user: UserProfile;
   onClose: () => void;
   onLogout: () => void;
 }
@@ -15,9 +15,9 @@ const ProfileModal = ({ user, onClose, onLogout }: Props) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserProfile(form);
+    await updateProfile(form);
     toast.success("প্রোফাইল আপডেট হয়েছে!");
     onClose();
   };

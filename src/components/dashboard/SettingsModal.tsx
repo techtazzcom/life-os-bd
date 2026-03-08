@@ -1,17 +1,21 @@
-import { useState } from "react";
-import { getNamazTimes, saveNamazTimes, getExtraSettings, saveExtraSettings, type Habit, type NamazTimes } from "@/lib/dataStore";
+import { useState, useEffect } from "react";
+import { getNamazTimes, saveNamazTimes, getExtraSettings, saveExtraSettings, type Habit, type NamazTimes, type ExtraSettings } from "@/lib/dataStore";
 
 interface Props {
-  email: string;
   habits: Habit[];
   onHabitsChange: (habits: Habit[]) => void;
   onClose: () => void;
 }
 
-const SettingsModal = ({ email, habits, onHabitsChange, onClose }: Props) => {
-  const [namazTimes, setNamazTimes] = useState<NamazTimes>(getNamazTimes(email));
-  const [settings, setSettings] = useState(getExtraSettings(email));
+const SettingsModal = ({ habits, onHabitsChange, onClose }: Props) => {
+  const [namazTimes, setNamazTimes] = useState<NamazTimes>({ fajr: "05:30", dhuhr: "13:30", asr: "16:45", maghrib: "18:20", isha: "20:00" });
+  const [settings, setSettings] = useState<ExtraSettings>({ dailyLimit: 500, monthlyLimit: 15000, sleepTime: "22:00" });
   const [newHabit, setNewHabit] = useState("");
+
+  useEffect(() => {
+    getNamazTimes().then(setNamazTimes);
+    getExtraSettings().then(setSettings);
+  }, []);
 
   const addHabit = () => {
     if (!newHabit.trim()) return;
@@ -19,9 +23,9 @@ const SettingsModal = ({ email, habits, onHabitsChange, onClose }: Props) => {
     setNewHabit("");
   };
 
-  const saveAll = () => {
-    saveNamazTimes(email, namazTimes);
-    saveExtraSettings(email, settings);
+  const saveAll = async () => {
+    await saveNamazTimes(namazTimes);
+    await saveExtraSettings(settings);
     onClose();
   };
 
@@ -32,7 +36,6 @@ const SettingsModal = ({ email, habits, onHabitsChange, onClose }: Props) => {
           <h3 className="text-2xl font-black text-foreground">⚙️ সেটিংস</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-destructive text-2xl">✕</button>
         </div>
-
         <div className="space-y-6">
           <section>
             <h4 className="font-bold text-life-emerald border-b border-border pb-2 mb-4 text-xs uppercase tracking-widest">নামাজের সময়</h4>
@@ -45,7 +48,6 @@ const SettingsModal = ({ email, habits, onHabitsChange, onClose }: Props) => {
               ))}
             </div>
           </section>
-
           <section>
             <h4 className="font-bold text-primary border-b border-border pb-2 mb-4 text-xs uppercase tracking-widest">বাজেট ও ঘুম</h4>
             <div className="grid grid-cols-2 gap-3">
@@ -54,7 +56,6 @@ const SettingsModal = ({ email, habits, onHabitsChange, onClose }: Props) => {
               <div className="col-span-2"><label className="text-xs font-bold text-muted-foreground">ঘুমানোর সময়</label><input type="time" value={settings.sleepTime} onChange={e => setSettings({ ...settings, sleepTime: e.target.value })} className="w-full p-2 border border-border rounded-xl font-bold bg-secondary text-foreground outline-none" /></div>
             </div>
           </section>
-
           <section>
             <h4 className="font-bold text-life-orange border-b border-border pb-2 mb-4 text-xs uppercase tracking-widest">রুটিন ম্যানেজমেন্ট</h4>
             <div className="flex gap-2 mb-4">
@@ -70,7 +71,6 @@ const SettingsModal = ({ email, habits, onHabitsChange, onClose }: Props) => {
               ))}
             </div>
           </section>
-
           <button onClick={saveAll} className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-black shadow-lg hover:opacity-90 transition active:scale-95">সংরক্ষণ করুন</button>
         </div>
       </div>
