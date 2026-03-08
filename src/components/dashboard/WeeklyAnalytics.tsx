@@ -112,7 +112,7 @@ const WeeklyAnalytics = () => {
           </h3>
           <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">গত ৭ দিন</span>
         </div>
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
           {tabs.map(tab => (
             <button
               key={tab.key}

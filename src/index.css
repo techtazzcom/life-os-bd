@@ -159,6 +159,7 @@ input[type="datetime-local"] {
   -moz-appearance: none;
   appearance: none;
   min-height: 2.75rem;
+  color: hsl(var(--foreground));
 }
 
 input[type="date"]::-webkit-date-and-time-value,
@@ -167,20 +168,15 @@ input[type="datetime-local"]::-webkit-date-and-time-value {
   text-align: left;
 }
 
-/* Ensure placeholder text is visible on mobile */
-input[type="date"]::before,
-input[type="time"]::before,
-input[type="datetime-local"]::before {
-  content: attr(placeholder);
+/* Show placeholder when empty on mobile */
+input[type="date"][value=""],
+input[type="time"][value=""],
+input[type="datetime-local"][value=""] {
   color: hsl(var(--muted-foreground));
-  width: 100%;
 }
 
-input[type="date"]:valid::before,
-input[type="time"]:valid::before,
-input[type="datetime-local"]:valid::before,
-input[type="date"]:focus::before,
-input[type="time"]:focus::before,
-input[type="datetime-local"]:focus::before {
-  display: none;
+input[type="date"]:not([value=""]),
+input[type="time"]:not([value=""]),
+input[type="datetime-local"]:not([value=""]) {
+  color: hsl(var(--foreground));
 }

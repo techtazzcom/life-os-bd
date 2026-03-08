@@ -37,10 +37,10 @@ const GoalCard = ({ goals, onGoalsChange }: Props) => {
   return (
     <div className="bg-card rounded-2xl p-5 border border-border border-t-4 border-t-primary shadow-sm">
       <h3 className="font-bold text-lg text-primary mb-4">🎯 আমার লক্ষ্য</h3>
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="লক্ষ্যের নাম..." className="flex-1 p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-foreground" />
-        <input type="datetime-local" value={date} onChange={e => setDate(e.target.value)} className="p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-muted-foreground" />
-        <button onClick={addGoal} className="bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold hover:opacity-90 transition active:scale-95">সেট</button>
+      <div className="flex flex-col gap-2 mb-4">
+        <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="লক্ষ্যের নাম..." className="w-full p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-foreground" />
+        <input type="datetime-local" value={date} onChange={e => setDate(e.target.value)} placeholder="তারিখ ও সময়" className="w-full p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-foreground" />
+        <button onClick={addGoal} className="w-full bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold hover:opacity-90 transition active:scale-95">সেট</button>
       </div>
       <div className="space-y-3">
         {goals.map(g => {
