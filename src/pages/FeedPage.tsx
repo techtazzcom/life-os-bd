@@ -668,6 +668,7 @@ const FeedPage = () => {
                 {/* Post Content */}
                 <div className="px-3 sm:px-4 pb-3">
                   <p className="text-sm text-foreground font-semibold whitespace-pre-wrap break-words leading-relaxed overflow-hidden">{post.content}</p>
+                  <LinkPreview content={post.content} />
                 </div>
 
                 {/* Reaction Stats */}
