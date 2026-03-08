@@ -437,7 +437,7 @@ const FeedPage = () => {
             const catInfo = CATEGORIES.find(c => c.value === post.category);
 
             return (
-              <div key={post.id} className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+              <div key={post.id} className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden max-w-full">
                 {/* Post Header */}
                 <div className="flex items-center gap-3 p-4 pb-2">
                   <Avatar className="w-10 h-10 shrink-0">
