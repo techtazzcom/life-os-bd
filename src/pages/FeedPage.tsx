@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import DeleteConfirmDialog from "@/components/dashboard/DeleteConfirmDialog";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
