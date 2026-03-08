@@ -25,7 +25,7 @@ const AdminPage = () => {
   const navigate = useNavigate();
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"dashboard" | "users" | "appeals" | "logs" | "spam" | "reports">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "users" | "appeals" | "logs" | "spam" | "reports" | "settings">("dashboard");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState({ total: 0, active: 0, blocked: 0, suspended: 0, locked: 0, verified: 0, online: 0 });
   const [logs, setLogs] = useState<ActivityLog[]>([]);
