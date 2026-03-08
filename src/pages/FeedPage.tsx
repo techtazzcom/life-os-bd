@@ -9,6 +9,8 @@ import { bn } from "date-fns/locale";
 import { getMyStatus } from "@/lib/adminStore";
 import { BadgeCheck } from "lucide-react";
 import UserProfileDialog from "@/components/chat/UserProfileDialog";
+import FeedNotifications from "@/components/feed/FeedNotifications";
+import FriendList from "@/components/feed/FriendList";
 
 interface PostProfile {
   name: string;
