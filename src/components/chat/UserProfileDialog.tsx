@@ -35,7 +35,7 @@ interface Props {
 }
 
 const InfoRow = ({ icon, label, value }: { icon: string; label: string; value?: string | null }) => {
-  if (!value) return null;
+  if (!value || value.trim() === "") return null;
   return (
     <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/50 border border-border/50">
       <span className="text-lg shrink-0 mt-0.5">{icon}</span>
@@ -153,7 +153,7 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
               <InfoRow icon="📍" label="ঠিকানা" value={profile.address} />
 
               {(() => {
-                const hasAny = (showEmail && profile.email) || (showMobile && profile.mobile) || profile.work || profile.blood_group || profile.institution || profile.hobby || profile.dob || profile.website || profile.social_link || profile.address;
+                const hasAny = (showEmail && profile.email && profile.email.trim()) || (showMobile && profile.mobile && profile.mobile.trim()) || (profile.work && profile.work.trim()) || (profile.blood_group && profile.blood_group.trim()) || (profile.institution && profile.institution.trim()) || (profile.hobby && profile.hobby.trim()) || (profile.dob && profile.dob.trim()) || (profile.website && profile.website.trim()) || (profile.social_link && profile.social_link.trim()) || (profile.address && profile.address.trim());
                 if (hasAny) return null;
                 return (
                   <p className="text-center text-muted-foreground text-sm py-4 font-semibold">

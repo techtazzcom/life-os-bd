@@ -232,16 +232,21 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
   const startCall = useCallback(async (userId: string, userName: string, type: "audio" | "video") => {
     const myId = currentUserIdRef.current;
-    if (!myId) return;
+    if (!myId) {
+      console.error("No current user ID");
+      return;
+    }
 
     try {
       // Update call type first
       callTypeRef.current = type;
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: type === "video",
-      });
+      // Request media with mobile-friendly constraints
+      const constraints: MediaStreamConstraints = {
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: type === "video" ? { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } : false,
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
 
       const sessionId = crypto.randomUUID();
@@ -261,7 +266,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
       const pc = createPeerConnection(userId);
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-      const offer = await pc.createOffer();
+      const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: type === "video" });
       await pc.setLocalDescription(offer);
 
       await supabase.from("call_signals").insert({
@@ -285,10 +290,11 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     try {
       stopRingtone();
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: callState.callType === "video",
-      });
+      const constraints: MediaStreamConstraints = {
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: callState.callType === "video" ? { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } : false,
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
 
       const pc = createPeerConnection(remoteId);

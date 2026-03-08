@@ -75,6 +75,21 @@ const ChatPage = () => {
     };
   }, []);
 
+  // Real-time online status updates
+  useEffect(() => {
+    if (!currentUserId) return;
+    const channel = supabase.channel("profiles-online-status")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, (payload) => {
+        const updated = payload.new as any;
+        if (updated.user_id === currentUserId) return;
+        // Update users list
+        setUsers(prev => prev.map(u => u.user_id === updated.user_id ? { ...u, is_online: updated.is_online, last_seen: updated.last_seen } : u));
+        // Update selected user if it's the same person
+        setSelectedUser(prev => prev && prev.user_id === updated.user_id ? { ...prev, is_online: updated.is_online, last_seen: updated.last_seen } : prev);
+      }).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId]);
+
   useEffect(() => {
     if (!currentUserId) return;
     supabase.from("profiles").select("user_id, name, email, is_online, last_seen, avatar_url").neq("user_id", currentUserId).then(({ data }) => {
@@ -526,48 +541,21 @@ const ChatPage = () => {
 
             {/* Info Sections */}
             <div className="flex-1">
-              {/* Recent Activity */}
-              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="text-base">🕐</span>
-                  <span className="text-[14px] text-foreground font-medium">সাম্প্রতিক কার্যকলাপ</span>
-                </div>
-                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <button onClick={() => { import("sonner").then(m => m.toast.info("শীঘ্রই আসছে!")); }} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3"><span className="text-base">🕐</span><span className="text-[14px] text-foreground font-medium">সাম্প্রতিক কার্যকলাপ</span></div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
-
-              {/* Media */}
-              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="text-base">🖼️</span>
-                  <span className="text-[14px] text-foreground font-medium">মিডিয়া ও ফাইল</span>
-                </div>
-                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <button onClick={() => { import("sonner").then(m => m.toast.info("শীঘ্রই আসছে!")); }} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3"><span className="text-base">🖼️</span><span className="text-[14px] text-foreground font-medium">মিডিয়া ও ফাইল</span></div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
-
-              {/* Notification */}
-              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="text-base">🔔</span>
-                  <span className="text-[14px] text-foreground font-medium">নোটিফিকেশন</span>
-                </div>
-                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <button onClick={() => { import("sonner").then(m => m.toast.info("শীঘ্রই আসছে!")); }} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3"><span className="text-base">🔔</span><span className="text-[14px] text-foreground font-medium">নোটিফিকেশন</span></div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
-
-              {/* Privacy */}
-              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="text-base">🔒</span>
-                  <span className="text-[14px] text-foreground font-medium">গোপনীয়তা</span>
-                </div>
-                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <button onClick={() => { import("sonner").then(m => m.toast.info("শীঘ্রই আসছে!")); }} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3"><span className="text-base">🔒</span><span className="text-[14px] text-foreground font-medium">গোপনীয়তা</span></div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
             </div>
           </div>
@@ -663,9 +651,9 @@ const ChatPage = () => {
                   {selectedUser.is_online ? <span className="text-green-500 font-medium">সক্রিয়</span> : <span className="text-muted-foreground">{formatLastSeen(selectedUser.last_seen)}</span>}
                 </p>
               </div>
-              <div className="flex items-center">
-                <button onClick={() => startCall(selectedUser.user_id, selectedUser.name, "audio")} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition active:scale-95 text-primary text-lg">📞</button>
-                <button onClick={() => startCall(selectedUser.user_id, selectedUser.name, "video")} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition active:scale-95 text-primary text-lg">📹</button>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startCall(selectedUser.user_id, selectedUser.name, "audio"); }} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition active:scale-95 active:bg-primary/20 text-primary text-lg touch-manipulation">📞</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startCall(selectedUser.user_id, selectedUser.name, "video"); }} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition active:scale-95 active:bg-primary/20 text-primary text-lg touch-manipulation">📹</button>
                 <button
                   onClick={() => setShowInsightPanel(true)}
                   className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition active:scale-95 text-muted-foreground text-sm"
@@ -782,21 +770,20 @@ const ChatPage = () => {
               </button>
             </div>
 
-            {/* Info Sections */}
             <div>
-              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+              <button onClick={() => { import("sonner").then(m => m.toast.info("শীঘ্রই আসছে!")); }} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
                 <div className="flex items-center gap-3"><span className="text-base">🕐</span><span className="text-[14px] text-foreground font-medium">সাম্প্রতিক কার্যকলাপ</span></div>
                 <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
-              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+              <button onClick={() => { import("sonner").then(m => m.toast.info("শীঘ্রই আসছে!")); }} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
                 <div className="flex items-center gap-3"><span className="text-base">🖼️</span><span className="text-[14px] text-foreground font-medium">মিডিয়া ও ফাইল</span></div>
                 <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
-              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+              <button onClick={() => { import("sonner").then(m => m.toast.info("শীঘ্রই আসছে!")); }} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
                 <div className="flex items-center gap-3"><span className="text-base">🔔</span><span className="text-[14px] text-foreground font-medium">নোটিফিকেশন</span></div>
                 <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
-              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+              <button onClick={() => { import("sonner").then(m => m.toast.info("শীঘ্রই আসছে!")); }} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
                 <div className="flex items-center gap-3"><span className="text-base">🔒</span><span className="text-[14px] text-foreground font-medium">গোপনীয়তা</span></div>
                 <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
