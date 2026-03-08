@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react"
 import { useNavigate } from "react-router-dom";
 import { signOut, getProfile, loadDayData, saveDayData, getGoals, saveGoals, getPermNotes, savePermNotes, getNamazTimes, getExtraSettings, saveExtraSettings, getAccounts, saveAccounts, getQuickNotes, saveQuickNotes, getHabitDefinitions, saveHabitDefinitions, getMonthlyExpenses, getTodayStr, getProfileForUser, loadDayDataForUser, getGoalsForUser, getPermNotesForUser, getNamazTimesForUser, getExtraSettingsForUser, getAccountsForUser, getQuickNotesForUser, getHabitDefinitionsForUser, getMonthlyExpensesForUser, type DayData, type Goal, type PermNote, type UserProfile, type NamazTimes, type ExtraSettings } from "@/lib/dataStore";
 import type { Medicine, Habit, Transaction } from "@/lib/types";
-import type { Medicine, Habit, Transaction } from "@/lib/types";
 import NavBar from "@/components/dashboard/NavBar";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import SummaryCards from "@/components/dashboard/SummaryCards";
