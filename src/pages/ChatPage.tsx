@@ -352,7 +352,7 @@ const ChatPage = () => {
                   <button onClick={() => setShowCreateGroup(true)} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition-colors text-sm" title="গ্রুপ তৈরি">
                     👥
                   </button>
-                  <button className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition-colors text-sm">
+                  <button onClick={() => { setChatMode("dm"); setSelectedUser(null); setSelectedGroup(null); setSearch(""); }} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition-colors text-sm" title="নতুন মেসেজ">
                     ✏️
                   </button>
                 </div>
@@ -786,6 +786,51 @@ const ChatPage = () => {
         )}
 
         <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
+
+        {/* Create Group Modal - Desktop */}
+        <Dialog open={showCreateGroup} onOpenChange={setShowCreateGroup}>
+          <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden max-h-[85vh] flex flex-col">
+            <DialogHeader className="px-5 pt-5 pb-3">
+              <DialogTitle className="text-lg font-black flex items-center gap-2">👥 নতুন গ্রুপ তৈরি</DialogTitle>
+            </DialogHeader>
+            <div className="px-5 pb-5 space-y-4 overflow-y-auto">
+              <div>
+                <label className="text-sm font-bold text-foreground mb-1 block">গ্রুপের নাম</label>
+                <input
+                  type="text"
+                  value={newGroupName}
+                  onChange={e => setNewGroupName(e.target.value)}
+                  placeholder="গ্রুপের নাম লিখুন..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border outline-none text-sm text-foreground placeholder:text-muted-foreground focus:border-primary transition"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-foreground mb-2 block">সদস্য যোগ করুন ({selectedMembers.length} জন সিলেক্টেড)</label>
+                <ScrollArea className="h-[250px] rounded-xl border border-border">
+                  <div className="p-2 space-y-1">
+                    {users.map(u => {
+                      const isSelected = selectedMembers.includes(u.user_id);
+                      return (
+                        <button
+                          key={u.user_id}
+                          onClick={() => setSelectedMembers(prev => isSelected ? prev.filter(id => id !== u.user_id) : [...prev, u.user_id])}
+                          className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition ${isSelected ? 'bg-primary/10 border border-primary/30' : 'hover:bg-secondary border border-transparent'}`}
+                        >
+                          <UserAvatar name={u.name} avatarUrl={u.avatar_url} size={36} />
+                          <span className="text-sm font-bold text-foreground flex-1 text-left truncate">{u.name}</span>
+                          {isSelected && <span className="text-primary text-lg">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </div>
+              <Button onClick={createGroup} disabled={!newGroupName.trim() || selectedMembers.length === 0} className="w-full rounded-xl font-bold">
+                গ্রুপ তৈরি করুন
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -805,7 +850,7 @@ const ChatPage = () => {
               <div className="flex items-center gap-1.5">
                 <button onClick={() => navigate("/feed")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition text-base" title="নিউজফিড">📰</button>
                 <button onClick={() => setShowCreateGroup(true)} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition text-base" title="গ্রুপ তৈরি">👥</button>
-                <button className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition text-base">✏️</button>
+                <button onClick={() => { setChatMode("dm"); setSelectedUser(null); setSelectedGroup(null); setSearch(""); }} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition text-base" title="নতুন মেসেজ">✏️</button>
               </div>
             </div>
             <div className="relative">

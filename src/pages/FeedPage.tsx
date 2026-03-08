@@ -475,7 +475,7 @@ const FeedPage = () => {
         <div className="max-w-2xl mx-auto flex items-center gap-2">
           <button onClick={() => navigate("/dashboard")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-lg shrink-0">←</button>
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground shadow text-base shrink-0">📰</div>
-          <h1 className="text-lg font-black text-foreground flex-1 truncate">নিউজফিড</h1>
+          <h1 className="text-[15px] sm:text-lg font-black text-foreground flex-1 truncate">নিউজফিড</h1>
           <button onClick={() => setSettingsOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition shrink-0">
             <Settings size={18} />
           </button>
