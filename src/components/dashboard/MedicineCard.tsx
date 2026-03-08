@@ -67,13 +67,13 @@ const MedicineCard = ({ medicines, doses, onMedicinesChange, onDosesChange }: Pr
 
       {/* Add Medicine Form */}
       <div className="space-y-2 mb-4 bg-life-pink-light p-3 rounded-xl border border-life-pink/20">
-        <div className="grid grid-cols-[1fr_auto] gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="ওষুধের নাম..." className="w-full p-2.5 rounded-lg bg-card border border-border outline-none text-sm font-bold text-foreground min-w-0" />
-          <input type="text" value={dose} onChange={e => setDose(e.target.value)} placeholder="ডোজ" className="w-20 p-2.5 rounded-lg bg-card border border-border outline-none text-sm font-bold text-foreground" />
+          <TimeInput value={time} onChange={setTime} placeholder="HH:MM" className="w-full p-2.5 rounded-lg bg-card border border-border outline-none text-sm font-bold text-muted-foreground" />
         </div>
-        <div className="flex gap-2 items-center flex-wrap">
-          <TimeInput value={time} onChange={setTime} placeholder="HH:MM" className="p-2.5 rounded-lg bg-card border border-border outline-none text-sm font-bold text-muted-foreground w-[120px]" />
-          <button onClick={addTime} className="bg-life-pink/20 text-life-pink px-3 py-2.5 rounded-lg text-xs font-bold hover:bg-life-pink/30 transition whitespace-nowrap">+ সময়</button>
+        <div className="grid grid-cols-2 gap-2">
+          <input type="text" value={dose} onChange={e => setDose(e.target.value)} placeholder="ডোজ" className="w-full p-2.5 rounded-lg bg-card border border-border outline-none text-sm font-bold text-foreground" />
+          <button onClick={addTime} className="w-full bg-life-pink/20 text-life-pink p-2.5 rounded-lg text-sm font-bold hover:bg-life-pink/30 transition">+ সময়</button>
         </div>
         {times.length > 0 && (
           <div className="flex gap-1.5 flex-wrap">

@@ -39,7 +39,9 @@ const GoalCard = ({ goals, onGoalsChange }: Props) => {
       <h3 className="font-bold text-lg text-primary mb-4">🎯 আমার লক্ষ্য</h3>
       <div className="flex flex-col gap-2 mb-4">
         <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="লক্ষ্যের নাম..." className="w-full p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-foreground" />
-        <input type="datetime-local" value={date} onChange={e => setDate(e.target.value)} placeholder="তারিখ ও সময়" className="w-full p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-foreground" />
+        <div className="relative">
+          <input type="text" value={date} onChange={e => setDate(e.target.value)} placeholder="যেমন: 2025-12-31 23:59" className="w-full p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-foreground" onFocus={e => { e.target.type = 'datetime-local'; }} onBlur={e => { if (!e.target.value) e.target.type = 'text'; }} />
+        </div>
         <button onClick={addGoal} className="w-full bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold hover:opacity-90 transition active:scale-95">সেট</button>
       </div>
       <div className="space-y-3">
