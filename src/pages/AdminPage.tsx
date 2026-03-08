@@ -338,11 +338,6 @@ const AdminPage = () => {
                     </div>
 
                     <div className="flex flex-col gap-1.5 shrink-0">
-                      {/* Login as user */}
-                      <button onClick={() => handleLoginAsUser(user)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 text-blue-600 text-xs font-bold hover:bg-blue-500/25 transition">
-                        <LogIn size={12} /> ঢুকুন
-                      </button>
-
                       {user.status !== "active" && (
                         <button onClick={() => setActionModal({ type: "activate", user })} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 text-xs font-bold hover:bg-emerald-500/25 transition">
                           <Unlock size={12} /> সক্রিয়
@@ -366,6 +361,9 @@ const AdminPage = () => {
                       </button>
                       <button onClick={() => setActionModal({ type: "notify", user })} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-muted-foreground text-xs font-bold hover:text-foreground transition">
                         <Bell size={12} /> নোটিফিকেশন
+                      </button>
+                      <button onClick={() => handleLoginAsUser(user)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 text-blue-600 text-xs font-bold hover:bg-blue-500/25 transition">
+                        <LogIn size={12} /> ঢুকুন
                       </button>
                       <button onClick={() => setActionModal({ type: "delete", user })} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 text-xs font-bold hover:bg-red-500/20 transition">
                         <Trash2 size={12} /> ডিলেট

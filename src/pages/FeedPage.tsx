@@ -12,6 +12,8 @@ interface PostProfile {
   name: string;
   user_id: string;
   is_online?: boolean;
+  is_verified?: boolean;
+  avatar_url?: string | null;
 }
 
 interface Comment {
