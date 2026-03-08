@@ -738,6 +738,72 @@ const ChatPage = () => {
           </div>
         </div>
       )}
+      {/* Mobile Insight Panel */}
+      {selectedUser && showInsightPanel && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          <div className="flex items-center px-4 py-3 border-b border-border bg-card">
+            <button
+              onClick={() => setShowInsightPanel(false)}
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition text-lg"
+            >
+              ←
+            </button>
+            <h2 className="flex-1 text-center font-bold text-foreground text-[16px]">বিস্তারিত</h2>
+            <div className="w-9" />
+          </div>
+          <div className="flex-1 overflow-y-auto no-scrollbar">
+            {/* Profile Section */}
+            <div className="flex flex-col items-center px-6 pt-8 pb-5">
+              <div className="relative mb-3">
+                <UserAvatar name={selectedUser.name} avatarUrl={selectedUser.avatar_url} size={80} className="shadow-lg" />
+                {selectedUser.is_online && (
+                  <span className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-[3px] border-background rounded-full" />
+                )}
+              </div>
+              <h3 className="text-lg font-bold text-foreground">{selectedUser.name}</h3>
+              <p className="text-[13px] text-muted-foreground mt-0.5">
+                {selectedUser.is_online ? "সক্রিয়" : formatLastSeen(selectedUser.last_seen)}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-center gap-6 pb-5 border-b border-border mx-4">
+              <button onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }} className="flex flex-col items-center gap-1.5">
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center"><span className="text-sm">👤</span></div>
+                <span className="text-[11px] text-muted-foreground">প্রোফাইল</span>
+              </button>
+              <button onClick={() => startCall(selectedUser.user_id, selectedUser.name, "audio")} className="flex flex-col items-center gap-1.5">
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center"><span className="text-sm">📞</span></div>
+                <span className="text-[11px] text-muted-foreground">অডিও কল</span>
+              </button>
+              <button onClick={() => startCall(selectedUser.user_id, selectedUser.name, "video")} className="flex flex-col items-center gap-1.5">
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center"><span className="text-sm">📹</span></div>
+                <span className="text-[11px] text-muted-foreground">ভিডিও কল</span>
+              </button>
+            </div>
+
+            {/* Info Sections */}
+            <div>
+              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3"><span className="text-base">🕐</span><span className="text-[14px] text-foreground font-medium">সাম্প্রতিক কার্যকলাপ</span></div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3"><span className="text-base">🖼️</span><span className="text-[14px] text-foreground font-medium">মিডিয়া ও ফাইল</span></div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3"><span className="text-base">🔔</span><span className="text-[14px] text-foreground font-medium">নোটিফিকেশন</span></div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3"><span className="text-base">🔒</span><span className="text-[14px] text-foreground font-medium">গোপনীয়তা</span></div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
     </div>
   );
