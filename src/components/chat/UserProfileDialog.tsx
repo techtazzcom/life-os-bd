@@ -4,7 +4,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,6 +25,7 @@ interface Profile {
   hide_mobile?: boolean;
   is_online?: boolean;
   last_seen?: string | null;
+  avatar_url?: string | null;
 }
 
 interface Props {
@@ -74,31 +74,21 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return null;
     try {
-      return new Date(dateStr).toLocaleDateString("bn-BD", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    } catch {
-      return dateStr;
-    }
+      return new Date(dateStr).toLocaleDateString("bn-BD", { year: "numeric", month: "long", day: "numeric" });
+    } catch { return dateStr; }
   };
 
   const formatLastSeen = (dateStr?: string | null) => {
     if (!dateStr) return null;
     try {
       const d = new Date(dateStr);
-      const now = new Date();
-      const diffMs = now.getTime() - d.getTime();
-      const diffMin = Math.floor(diffMs / 60000);
+      const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
       if (diffMin < 1) return "এইমাত্র";
       if (diffMin < 60) return `${diffMin} মিনিট আগে`;
       const diffHr = Math.floor(diffMin / 60);
       if (diffHr < 24) return `${diffHr} ঘন্টা আগে`;
       return d.toLocaleDateString("bn-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   };
 
   const showEmail = isOwnProfile || !profile?.hide_email;
@@ -116,12 +106,15 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
           <>
             {/* Header */}
             <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent pt-8 pb-6 px-6 text-center relative">
-              <Avatar className="w-20 h-20 mx-auto mb-3 border-4 border-background shadow-lg relative">
-                <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-black">
-                  {profile.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              {/* Online dot on avatar */}
+              <div className="w-20 h-20 mx-auto mb-3 rounded-full border-4 border-background shadow-lg overflow-hidden relative">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-black">
+                    {profile.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
               {profile.is_online && (
                 <span className="absolute top-[88px] left-1/2 translate-x-[18px] w-4 h-4 bg-green-500 border-2 border-background rounded-full animate-pulse" />
               )}
@@ -136,7 +129,6 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
                   )}
                 </DialogTitle>
               </DialogHeader>
-              {/* Status text */}
               {!profile.is_online && (
                 <p className="text-xs font-bold mt-1 text-muted-foreground">
                   ⚫ {formatLastSeen(profile.last_seen) || 'অফলাইন'}
@@ -160,7 +152,6 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
               <InfoRow icon="🔗" label="সোশ্যাল লিংক" value={profile.social_link} />
               <InfoRow icon="📍" label="ঠিকানা" value={profile.address} />
 
-              {/* No extra info message */}
               {(() => {
                 const hasAny = (showEmail && profile.email) || (showMobile && profile.mobile) || profile.work || profile.blood_group || profile.institution || profile.hobby || profile.dob || profile.website || profile.social_link || profile.address;
                 if (hasAny) return null;

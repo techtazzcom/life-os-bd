@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { updateProfile, type UserProfile } from "@/lib/dataStore";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/imageCompress";
 
 interface Props {
   user: UserProfile;
@@ -11,9 +13,56 @@ interface Props {
 
 const ProfileModal = ({ user, onClose, onLogout }: Props) => {
   const [form, setForm] = useState(user);
+  const [avatarUrl, setAvatarUrl] = useState((user as any).avatar_url || "");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("শুধুমাত্র ছবি আপলোড করতে পারবেন!");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      // Compress to under 50KB
+      const compressed = await compressImage(file);
+      const filePath = `${authUser.id}/avatar.jpg`;
+
+      // Upload (upsert)
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, compressed, { 
+          contentType: "image/jpeg", 
+          upsert: true 
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      const url = urlData.publicUrl + "?t=" + Date.now(); // cache bust
+
+      // Update profile
+      await supabase.from("profiles").update({ avatar_url: url } as any).eq("user_id", authUser.id);
+      setAvatarUrl(url);
+      toast.success(`প্রোফাইল পিকচার আপডেট হয়েছে! (${(compressed.size / 1024).toFixed(1)}KB)`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("আপলোড ব্যর্থ হয়েছে");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -40,6 +89,35 @@ const ProfileModal = ({ user, onClose, onLogout }: Props) => {
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-destructive text-2xl">✕</button>
         </div>
+
+        {/* Avatar Upload */}
+        <div className="flex flex-col items-center mb-6">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="relative group"
+            disabled={uploading}
+          >
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/20 shadow-lg transition-transform group-hover:scale-105">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-3xl font-black text-primary">
+                  {form.name?.charAt(0)?.toUpperCase() || "?"}
+                </div>
+              )}
+            </div>
+            {/* Overlay */}
+            <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-white text-2xl">{uploading ? "⏳" : "📷"}</span>
+            </div>
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+          <p className="text-[11px] text-muted-foreground mt-2 font-medium">
+            {uploading ? "কম্প্রেস ও আপলোড হচ্ছে..." : "ছবি পরিবর্তন করতে ক্লিক করুন (সর্বোচ্চ 50KB)"}
+          </p>
+        </div>
+
         <form onSubmit={handleSave} className="space-y-4">
           <Field label="পূর্ণ নাম" name="name" />
 
@@ -60,7 +138,6 @@ const ProfileModal = ({ user, onClose, onLogout }: Props) => {
             </div>
           </div>
 
-          {/* Email privacy */}
           <div>
             <label className="text-xs font-bold text-muted-foreground ml-1">ইমেইল</label>
             <input type="email" value={form.email} disabled className="w-full p-3 bg-secondary/50 border border-border rounded-2xl outline-none text-muted-foreground cursor-not-allowed" />
