@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { isAdmin, getAllUsers, getAdminStats, getActivityLogs, updateUserStatus, toggleVerified, sendAdminNotification, getAppeals, updateAppealStatus, deleteUserAccount, type AdminUser, type ActivityLog, type Appeal } from "@/lib/adminStore";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Users, UserCheck, UserX, Lock, Unlock, Eye, Bell, Activity, Search, ArrowLeft, BadgeCheck, Ban, Clock, Send, Trash2, LogIn, FileText, AlertTriangle, Plus, X } from "lucide-react";
+import { Shield, Users, UserCheck, UserX, Lock, Unlock, Eye, Bell, Activity, Search, ArrowLeft, BadgeCheck, Ban, Clock, Send, Trash2, LogIn, FileText, AlertTriangle, Plus, X, Flag, MessageSquare, ToggleLeft, ToggleRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { bn } from "date-fns/locale";
 import { toast } from "sonner";
@@ -25,7 +25,7 @@ const AdminPage = () => {
   const navigate = useNavigate();
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"dashboard" | "users" | "appeals" | "logs" | "spam">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "users" | "appeals" | "logs" | "spam" | "reports">("dashboard");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState({ total: 0, active: 0, blocked: 0, suspended: 0, locked: 0, verified: 0, online: 0 });
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -46,6 +46,11 @@ const AdminPage = () => {
   const [newSpamWord, setNewSpamWord] = useState("");
   const [spamViolations, setSpamViolations] = useState<any[]>([]);
   const [spamBans, setSpamBans] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [reportReplies, setReportReplies] = useState<Record<string, any[]>>({});
+  const [reportReplyText, setReportReplyText] = useState("");
+  const [replyingReportId, setReplyingReportId] = useState<string | null>(null);
+  const [reportAdminNote, setReportAdminNote] = useState("");
 
   useEffect(() => {
     const check = async () => {
@@ -75,6 +80,20 @@ const AdminPage = () => {
     setSpamViolations((sv as any[]) || []);
     const { data: sb } = await supabase.from("spam_bans" as any).select("*").order("violation_count", { ascending: false });
     setSpamBans((sb as any[]) || []);
+    // Load reports
+    const { data: reps } = await supabase.from("reports").select("*").order("created_at", { ascending: false });
+    setReports((reps as any[]) || []);
+    // Load all report replies
+    if (reps && reps.length > 0) {
+      const repIds = reps.map(r => r.id);
+      const { data: repReplies } = await supabase.from("report_replies" as any).select("*").in("report_id", repIds).order("created_at", { ascending: true });
+      const grouped: Record<string, any[]> = {};
+      (repReplies as any[] || []).forEach((r: any) => {
+        if (!grouped[r.report_id]) grouped[r.report_id] = [];
+        grouped[r.report_id].push(r);
+      });
+      setReportReplies(grouped);
+    }
   }, []);
 
   const filteredUsers = users.filter(u =>
@@ -253,6 +272,7 @@ const AdminPage = () => {
           {[
             { key: "dashboard", icon: Activity, label: "ড্যাশবোর্ড" },
             { key: "users", icon: Users, label: "ইউজার" },
+            { key: "reports", icon: Flag, label: `রিপোর্ট${reports.filter(r => r.status === 'pending').length ? ` (${reports.filter(r => r.status === 'pending').length})` : ""}` },
             { key: "spam", icon: AlertTriangle, label: `স্প্যাম${spamBans.filter(b => b.violation_count > 0).length ? ` (${spamBans.filter(b => b.violation_count > 0).length})` : ""}` },
             { key: "appeals", icon: FileText, label: `আবেদন${pendingAppeals.length ? ` (${pendingAppeals.length})` : ""}` },
             { key: "logs", icon: Clock, label: "লগ" },
@@ -431,6 +451,154 @@ const AdminPage = () => {
                 >
                   পরের →
                 </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reports Tab */}
+        {tab === "reports" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-black text-foreground flex items-center gap-2"><Flag size={20} /> পোস্ট রিপোর্টসমূহ</h3>
+            <div className="flex gap-2 flex-wrap mb-2">
+              {["all", "pending", "resolved", "closed"].map(f => {
+                const count = f === "all" ? reports.length : reports.filter(r => r.status === f).length;
+                return (
+                  <button key={f} onClick={() => setSearch(f === "all" ? "" : f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${search === f || (f === "all" && !search) ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:text-foreground"}`}>
+                    {f === "all" ? "সব" : f === "pending" ? "⏳ অপেক্ষমান" : f === "resolved" ? "✅ সমাধান" : "❌ বন্ধ"} ({count})
+                  </button>
+                );
+              })}
+            </div>
+            {reports.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground font-bold">
+                <div className="text-4xl mb-3">📭</div>
+                কোনো রিপোর্ট নেই
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {reports
+                  .filter(r => !search || search === "all" || r.status === search)
+                  .map((report: any) => {
+                  const reporter = users.find(u => u.user_id === report.reporter_id);
+                  const reported = users.find(u => u.user_id === report.reported_id);
+                  const replies = reportReplies[report.id] || [];
+                  return (
+                    <div key={report.id} className={`bg-card rounded-2xl p-4 border shadow-sm ${report.status === "pending" ? "border-amber-500/40" : "border-border"}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-bold text-foreground text-sm">{reporter?.name || "অজানা"}</span>
+                            <span className="text-muted-foreground text-xs">→</span>
+                            <span className="font-bold text-foreground text-sm">{reported?.name || "অজানা"}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${
+                              report.status === "pending" ? "bg-amber-500/15 text-amber-600 border-amber-500/30" :
+                              report.status === "resolved" ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" :
+                              "bg-secondary text-muted-foreground border-border"
+                            }`}>
+                              {report.status === "pending" ? "⏳ অপেক্ষমান" : report.status === "resolved" ? "✅ সমাধান" : "❌ বন্ধ"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-foreground bg-secondary/60 rounded-xl p-3 my-2">{report.reason}</p>
+                          <p className="text-[10px] text-muted-foreground">{timeAgo(report.created_at)}</p>
+
+                          {/* Existing replies */}
+                          {replies.length > 0 && (
+                            <div className="mt-2 space-y-1.5">
+                              {replies.map((rep: any) => (
+                                <div key={rep.id} className={`rounded-xl px-3 py-2 text-xs ${rep.is_admin ? 'bg-primary/10 border border-primary/20' : 'bg-secondary border border-border'}`}>
+                                  <span className="font-black text-[10px] text-muted-foreground">{rep.is_admin ? '🛡️ এডমিন' : `👤 ${reporter?.name || 'ইউজার'}`} • </span>
+                                  <span className="text-foreground font-semibold">{rep.message}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {report.admin_note && (
+                            <p className="text-xs text-muted-foreground mt-2 bg-primary/5 border border-primary/20 rounded-lg p-2">🛡️ এডমিন নোট: {report.admin_note}</p>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          {/* Admin reply input */}
+                          {replyingReportId === report.id ? (
+                            <div className="w-48 space-y-1.5">
+                              <textarea
+                                value={reportReplyText}
+                                onChange={e => setReportReplyText(e.target.value)}
+                                placeholder="রিপ্লাই লিখুন..."
+                                className="w-full p-2 rounded-lg bg-secondary border border-border outline-none text-xs font-bold text-foreground resize-none h-16 focus:border-primary transition"
+                              />
+                              <div className="flex gap-1">
+                                <button onClick={async () => {
+                                  if (!reportReplyText.trim()) return;
+                                  const { data: { user } } = await supabase.auth.getUser();
+                                  await supabase.from("report_replies" as any).insert({
+                                    report_id: report.id,
+                                    user_id: user?.id,
+                                    message: reportReplyText.trim(),
+                                    is_admin: true,
+                                  });
+                                  // Notify reporter
+                                  await supabase.from("admin_notifications").insert({
+                                    user_id: report.reporter_id,
+                                    title: "🛡️ রিপোর্টে এডমিন রিপ্লাই",
+                                    message: reportReplyText.trim(),
+                                    type: "info",
+                                  });
+                                  setReportReplyText("");
+                                  setReplyingReportId(null);
+                                  refresh();
+                                  toast.success("রিপ্লাই পাঠানো হয়েছে");
+                                }} disabled={!reportReplyText.trim()} className="flex-1 px-2 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-bold hover:opacity-90 disabled:opacity-50 transition">পাঠান</button>
+                                <button onClick={() => { setReplyingReportId(null); setReportReplyText(""); }} className="px-2 py-1.5 rounded-lg bg-secondary text-muted-foreground text-[10px] font-bold hover:bg-secondary/80 transition">✕</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <button onClick={() => setReplyingReportId(report.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition">
+                                <MessageSquare size={12} /> রিপ্লাই
+                              </button>
+                              {report.status === "pending" && (
+                                <>
+                                  <button onClick={async () => {
+                                    await supabase.from("reports").update({ status: "resolved", admin_note: reportAdminNote || null } as any).eq("id", report.id);
+                                    await supabase.from("admin_notifications").insert({
+                                      user_id: report.reporter_id,
+                                      title: "✅ রিপোর্ট সমাধান হয়েছে",
+                                      message: reportAdminNote || "আপনার রিপোর্ট পর্যালোচনা করা হয়েছে।",
+                                      type: "success",
+                                    });
+                                    refresh();
+                                    toast.success("রিপোর্ট সমাধান করা হয়েছে");
+                                  }} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 text-xs font-bold hover:bg-emerald-500/25 transition">
+                                    ✅ সমাধান
+                                  </button>
+                                  <button onClick={async () => {
+                                    await supabase.from("reports").update({ status: "closed" } as any).eq("id", report.id);
+                                    refresh();
+                                    toast.success("রিপোর্ট বন্ধ করা হয়েছে");
+                                  }} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-muted-foreground text-xs font-bold hover:bg-secondary/80 transition">
+                                    ❌ বন্ধ
+                                  </button>
+                                </>
+                              )}
+                              {/* Toggle reply enabled */}
+                              <button onClick={async () => {
+                                await supabase.from("reports").update({ reply_enabled: !report.reply_enabled } as any).eq("id", report.id);
+                                refresh();
+                                toast.success(report.reply_enabled ? "ইউজার রিপ্লাই বন্ধ" : "ইউজার রিপ্লাই চালু");
+                              }} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition ${report.reply_enabled ? "bg-emerald-500/15 text-emerald-600" : "bg-secondary text-muted-foreground"}`}>
+                                {report.reply_enabled ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                                {report.reply_enabled ? "রিপ্লাই চালু" : "রিপ্লাই বন্ধ"}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

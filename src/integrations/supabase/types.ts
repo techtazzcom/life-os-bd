@@ -554,12 +554,49 @@ export type Database = {
         }
         Relationships: []
       }
+      report_replies: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean
+          message: string
+          report_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          message: string
+          report_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          message?: string
+          report_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_replies_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           admin_note: string | null
           created_at: string
           id: string
+          post_id: string | null
           reason: string
+          reply_enabled: boolean
           reported_id: string
           reporter_id: string
           status: string
@@ -569,7 +606,9 @@ export type Database = {
           admin_note?: string | null
           created_at?: string
           id?: string
+          post_id?: string | null
           reason?: string
+          reply_enabled?: boolean
           reported_id: string
           reporter_id: string
           status?: string
@@ -579,13 +618,23 @@ export type Database = {
           admin_note?: string | null
           created_at?: string
           id?: string
+          post_id?: string | null
           reason?: string
+          reply_enabled?: boolean
           reported_id?: string
           reporter_id?: string
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       spam_bans: {
         Row: {

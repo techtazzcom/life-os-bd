@@ -500,6 +500,68 @@ const FeedPage = () => {
     setDeletePostId(null);
   };
 
+  // Report post
+  const [reportPostId, setReportPostId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState("");
+  const [reportSending, setReportSending] = useState(false);
+  const [reportMenuPostId, setReportMenuPostId] = useState<string | null>(null);
+
+  // My reports with admin replies
+  const [myReports, setMyReports] = useState<any[]>([]);
+  const [showMyReports, setShowMyReports] = useState(false);
+  const [replyToReportId, setReplyToReportId] = useState<string | null>(null);
+  const [reportReplyText, setReportReplyText] = useState("");
+
+  const loadMyReports = async () => {
+    if (!currentUserId) return;
+    const { data } = await supabase.from("reports").select("*").eq("reporter_id", currentUserId).order("created_at", { ascending: false });
+    if (data) {
+      // Load replies for each report
+      const reportIds = data.map(r => r.id);
+      const { data: replies } = await supabase.from("report_replies" as any).select("*").in("report_id", reportIds).order("created_at", { ascending: true });
+      const enriched = data.map(r => ({
+        ...r,
+        replies: (replies as any[] || []).filter((rep: any) => rep.report_id === r.id),
+      }));
+      setMyReports(enriched);
+    }
+  };
+
+  const submitReport = async () => {
+    if (!reportPostId || !reportReason.trim() || !currentUserId) return;
+    setReportSending(true);
+    const post = posts.find(p => p.id === reportPostId);
+    await supabase.from("reports").insert({
+      reporter_id: currentUserId,
+      reported_id: post?.user_id || currentUserId,
+      reason: reportReason.trim(),
+      post_id: reportPostId,
+    } as any);
+    toast.success("রিপোর্ট সফলভাবে জমা হয়েছে!");
+    setReportPostId(null);
+    setReportReason("");
+    setReportSending(false);
+  };
+
+  const sendReportReply = async (reportId: string) => {
+    if (!reportReplyText.trim() || !currentUserId) return;
+    await supabase.from("report_replies" as any).insert({
+      report_id: reportId,
+      user_id: currentUserId,
+      message: reportReplyText.trim(),
+      is_admin: false,
+    });
+    setReportReplyText("");
+    setReplyToReportId(null);
+    loadMyReports();
+    toast.success("রিপ্লাই পাঠানো হয়েছে!");
+  };
+
+  // Load my reports on mount
+  useEffect(() => {
+    if (currentUserId) loadMyReports();
+  }, [currentUserId]);
+
   const displayPosts = posts;
 
   const timeAgo = (date: string) => {
@@ -522,6 +584,9 @@ const FeedPage = () => {
             <Settings size={18} />
           </button>
           <FriendList currentUserId={currentUserId} profiles={profiles} onSelectUser={(uid) => { setProfileUserId(uid); setProfileOpen(true); }} />
+          <button onClick={() => { setShowMyReports(true); loadMyReports(); }} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0" title="আমার রিপোর্ট">
+            🚩
+          </button>
           <FeedNotifications currentUserId={currentUserId} profiles={profiles} />
           <button onClick={() => navigate("/chat")} className="relative w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0">
             💬
@@ -655,14 +720,34 @@ const FeedPage = () => {
                       {catInfo && <span className="text-[10px] px-1.5 py-0.5 bg-secondary rounded-full text-muted-foreground font-bold">{catInfo.emoji} {catInfo.label}</span>}
                     </div>
                   </div>
-                  {isMyPost && (
+                  <div className="relative shrink-0">
                     <button
-                      onClick={() => setDeletePostId(post.id)}
-                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition text-sm"
+                      onClick={() => setReportMenuPostId(reportMenuPostId === post.id ? null : post.id)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground transition text-lg"
                     >
-                      🗑️
+                      ⋮
                     </button>
-                  )}
+                    {reportMenuPostId === post.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg z-50 min-w-[140px] py-1 animate-in fade-in zoom-in-95">
+                        {isMyPost && (
+                          <button
+                            onClick={() => { setDeletePostId(post.id); setReportMenuPostId(null); }}
+                            className="w-full px-4 py-2.5 text-left text-xs font-bold text-destructive hover:bg-destructive/10 transition flex items-center gap-2"
+                          >
+                            🗑️ ডিলেট করুন
+                          </button>
+                        )}
+                        {!isMyPost && (
+                          <button
+                            onClick={() => { setReportPostId(post.id); setReportMenuPostId(null); }}
+                            className="w-full px-4 py-2.5 text-left text-xs font-bold text-amber-600 hover:bg-amber-500/10 transition flex items-center gap-2"
+                          >
+                            🚩 রিপোর্ট করুন
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Post Content */}
@@ -897,6 +982,104 @@ const FeedPage = () => {
       />
       <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
       <FeedSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} currentUserId={currentUserId} profiles={profiles} />
+
+      {/* Report Post Modal */}
+      {reportPostId && (
+        <div className="fixed inset-0 bg-foreground/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setReportPostId(null)}>
+          <div className="bg-card rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-in fade-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-black text-foreground mb-1">🚩 পোস্ট রিপোর্ট করুন</h3>
+            <p className="text-xs text-muted-foreground mb-4">এই পোস্টে কী সমস্যা? কারণ লিখুন।</p>
+            <textarea
+              value={reportReason}
+              onChange={e => setReportReason(e.target.value)}
+              placeholder="রিপোর্টের কারণ বিস্তারিত লিখুন..."
+              className="w-full p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-foreground resize-none h-24 focus:border-primary transition"
+            />
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => setReportPostId(null)} className="flex-1 py-3 rounded-xl bg-secondary text-foreground font-bold hover:bg-secondary/80 transition">বাতিল</button>
+              <button onClick={submitReport} disabled={!reportReason.trim() || reportSending} className="flex-1 py-3 rounded-xl bg-destructive text-destructive-foreground font-bold hover:opacity-90 transition disabled:opacity-50">
+                {reportSending ? "..." : "রিপোর্ট পাঠান"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* My Reports Panel */}
+      {showMyReports && (
+        <div className="fixed inset-0 bg-foreground/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowMyReports(false)}>
+          <div className="bg-card rounded-3xl w-full max-w-md max-h-[80vh] shadow-2xl animate-in fade-in zoom-in-95 flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-black text-foreground">🚩 আমার রিপোর্টসমূহ</h3>
+              <button onClick={() => setShowMyReports(false)} className="w-8 h-8 rounded-full hover:bg-secondary flex items-center justify-center text-muted-foreground transition">✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {myReports.length === 0 && (
+                <div className="text-center py-10 text-muted-foreground">
+                  <div className="text-4xl mb-2">📭</div>
+                  <p className="font-bold text-sm">কোনো রিপোর্ট নেই</p>
+                </div>
+              )}
+              {myReports.map((report: any) => (
+                <div key={report.id} className={`bg-secondary/50 rounded-2xl p-4 border ${report.status === 'pending' ? 'border-amber-500/30' : report.status === 'resolved' ? 'border-emerald-500/30' : 'border-border'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                      report.status === 'pending' ? 'bg-amber-500/15 text-amber-600 border-amber-500/30' :
+                      report.status === 'resolved' ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' :
+                      'bg-secondary text-muted-foreground border-border'
+                    }`}>
+                      {report.status === 'pending' ? '⏳ অপেক্ষমান' : report.status === 'resolved' ? '✅ সমাধান হয়েছে' : '❌ বন্ধ'}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">{(() => { try { return formatDistanceToNow(new Date(report.created_at), { addSuffix: true, locale: bn }); } catch { return ""; } })()}</span>
+                  </div>
+                  <p className="text-sm font-bold text-foreground mb-1">{report.reason}</p>
+                  {report.admin_note && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 mt-2">
+                      <p className="text-[10px] font-black text-primary mb-0.5">🛡️ এডমিন রিপ্লাই:</p>
+                      <p className="text-xs text-foreground">{report.admin_note}</p>
+                    </div>
+                  )}
+
+                  {/* Conversation replies */}
+                  {report.replies && report.replies.length > 0 && (
+                    <div className="mt-2 space-y-1.5">
+                      {report.replies.map((rep: any) => (
+                        <div key={rep.id} className={`rounded-xl px-3 py-2 text-xs ${rep.is_admin ? 'bg-primary/10 border border-primary/20' : 'bg-secondary border border-border'}`}>
+                          <span className="font-black text-[10px] text-muted-foreground">{rep.is_admin ? '🛡️ এডমিন' : '👤 আপনি'} • </span>
+                          <span className="text-foreground font-semibold">{rep.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Reply input if enabled */}
+                  {report.reply_enabled && report.status !== 'pending' && (
+                    <div className="mt-2">
+                      {replyToReportId === report.id ? (
+                        <div className="flex gap-2">
+                          <input
+                            value={reportReplyText}
+                            onChange={e => setReportReplyText(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && sendReportReply(report.id)}
+                            placeholder="রিপ্লাই লিখুন..."
+                            className="flex-1 px-3 py-2 rounded-xl bg-card border border-border text-xs font-bold text-foreground outline-none focus:border-primary transition"
+                          />
+                          <button onClick={() => sendReportReply(report.id)} disabled={!reportReplyText.trim()} className="bg-primary text-primary-foreground px-3 py-2 rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-50 transition">→</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setReplyToReportId(report.id)} className="text-xs font-bold text-primary hover:underline transition">💬 রিপ্লাই দিন</button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Close dropdown on outside click */}
+      {reportMenuPostId && <div className="fixed inset-0 z-40" onClick={() => setReportMenuPostId(null)} />}
     </div>
   );
 };
