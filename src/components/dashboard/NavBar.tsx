@@ -129,6 +129,9 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
               <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-2xl shadow-xl w-44 overflow-hidden animate-fade-in-up z-50">
                 <button onClick={() => { onSettings(); setMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-foreground hover:bg-secondary transition flex items-center gap-2">⚙️ সেটিংস</button>
                 <button onClick={() => { onProfile(); setMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-foreground hover:bg-secondary transition flex items-center gap-2">👤 প্রোফাইল</button>
+                {isAdminUser && (
+                  <button onClick={() => { navigate('/admin'); setMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-foreground hover:bg-secondary transition flex items-center gap-2">🛡️ এডমিন</button>
+                )}
                 <button onClick={onLogout} className="w-full text-left px-4 py-3 text-sm font-bold text-destructive hover:bg-destructive/10 transition flex items-center gap-2">🚪 লগআউট</button>
               </div>
             )}
