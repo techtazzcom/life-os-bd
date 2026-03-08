@@ -160,7 +160,7 @@ const FeedNotifications = ({ currentUserId, profiles }: Props) => {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 max-h-[400px] overflow-y-auto bg-card border border-border rounded-2xl shadow-xl z-50 animate-fade-in-up">
+        <div className="fixed sm:absolute right-2 left-2 sm:left-auto sm:right-0 top-14 sm:top-full sm:mt-2 w-auto sm:w-80 max-h-[70vh] sm:max-h-[400px] overflow-y-auto bg-card border border-border rounded-2xl shadow-xl z-50 animate-fade-in-up">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
             <h4 className="font-black text-sm text-foreground">🔔 নোটিফিকেশন</h4>
           </div>
