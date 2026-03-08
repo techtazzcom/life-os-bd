@@ -41,20 +41,40 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
-  const localVideoRef = useRef<HTMLVideoElement | null>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const currentUserIdRef = useRef("");
   const callSessionRef = useRef<string>("");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ringtoneRef = useRef<AudioContext | null>(null);
   const ringtoneOscRef = useRef<OscillatorNode[]>([]);
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const callTypeRef = useRef<"audio" | "video">("audio");
+
+  // Keep callType ref in sync
+  useEffect(() => { callTypeRef.current = callState.callType; }, [callState.callType]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) currentUserIdRef.current = user.id;
     });
   }, []);
+
+  // Callback refs to attach streams when elements mount
+  const localVideoCallbackRef = useCallback((el: HTMLVideoElement | null) => {
+    if (el && localStreamRef.current) {
+      el.srcObject = localStreamRef.current;
+      el.muted = true;
+      el.playsInline = true;
+      el.play().catch(() => {});
+    }
+  }, [callState.isInCall, callState.isCalling]); // re-run when call state changes
+
+  const remoteVideoCallbackRef = useCallback((el: HTMLVideoElement | null) => {
+    if (el && remoteStreamRef.current) {
+      el.srcObject = remoteStreamRef.current;
+      el.playsInline = true;
+      el.play().catch(() => {});
+    }
+  }, [callState.isInCall]); // re-run when in-call state changes
 
   const playRingtone = useCallback(() => {
     try {
@@ -63,7 +83,6 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
       const gainNode = ctx.createGain();
       gainNode.gain.value = 0.1;
       gainNode.connect(ctx.destination);
-
       RINGTONE_FREQ.forEach(freq => {
         const osc = ctx.createOscillator();
         osc.type = "sine";
@@ -100,8 +119,12 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     remoteStreamRef.current = remoteStream;
 
     pc.ontrack = (e) => {
-      e.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
+      console.log("ontrack received:", e.track.kind);
+      e.streams[0].getTracks().forEach(track => {
+        remoteStream.addTrack(track);
+      });
+      // Force re-render to trigger callback refs
+      setCallState(s => ({ ...s }));
     };
 
     pc.onicecandidate = async (e) => {
@@ -111,31 +134,34 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
           receiver_id: remoteUserId,
           signal_type: "ice-candidate",
           signal_data: { candidate: e.candidate.toJSON() } as any,
-          call_type: callState.callType,
+          call_type: callTypeRef.current,
         });
       }
     };
 
     pc.oniceconnectionstatechange = () => {
+      console.log("ICE state:", pc.iceConnectionState);
       if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
         cleanup();
       }
     };
 
     return pc;
-  }, [callState.callType, cleanup]);
+  }, [cleanup]);
 
   const startCall = useCallback(async (userId: string, userName: string, type: "audio" | "video") => {
     const myId = currentUserIdRef.current;
     if (!myId) return;
 
     try {
+      // Update call type first
+      callTypeRef.current = type;
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: type === "video",
       });
       localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
       const sessionId = crypto.randomUUID();
       callSessionRef.current = sessionId;
@@ -143,7 +169,6 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
       setCallState(s => ({ ...s, isCalling: true, callType: type, remoteUser: { user_id: userId, name: userName } }));
       playRingtone();
 
-      // Send call-start signal
       await supabase.from("call_signals").insert({
         caller_id: myId,
         receiver_id: userId,
@@ -184,12 +209,10 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         video: callState.callType === "video",
       });
       localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
       const pc = createPeerConnection(remoteId);
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-      // Get the offer
       const { data: offerData } = await supabase
         .from("call_signals")
         .select("*")
@@ -204,7 +227,6 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         const signalData = offerData.signal_data as any;
         await pc.setRemoteDescription(new RTCSessionDescription({ sdp: signalData.sdp, type: signalData.type }));
 
-        // Apply pending candidates
         for (const candidate of pendingCandidatesRef.current) {
           try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
         }
@@ -279,13 +301,9 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals" }, async (payload) => {
         const signal = payload.new as any;
         const myId = currentUserIdRef.current;
-        if (!myId) return;
-
-        // Only process signals directed at me
-        if (signal.receiver_id !== myId) return;
+        if (!myId || signal.receiver_id !== myId) return;
 
         if (signal.signal_type === "call-start") {
-          // Incoming call
           const { data: callerProfile } = await supabase
             .from("profiles")
             .select("name")
@@ -306,7 +324,6 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
           const signalData = signal.signal_data as any;
           await pcRef.current.setRemoteDescription(new RTCSessionDescription({ sdp: signalData.sdp, type: signalData.type }));
 
-          // Apply pending candidates
           for (const candidate of pendingCandidatesRef.current) {
             try { await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
           }
@@ -342,6 +359,8 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
   };
 
+  const isActive = callState.isInCall || callState.isCalling || callState.isReceiving;
+
   return (
     <CallContext.Provider value={{ callState, startCall, endCall, acceptCall, rejectCall, toggleMute, toggleVideo }}>
       {children}
@@ -358,17 +377,10 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
               {callState.callType === "video" ? "ভিডিও কল আসছে..." : "অডিও কল আসছে..."}
             </p>
             <div className="flex justify-center gap-6">
-              <button
-                onClick={rejectCall}
-                className="w-16 h-16 bg-destructive rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95 animate-bounce"
-              >
+              <button onClick={rejectCall} className="w-16 h-16 bg-destructive rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95 animate-bounce">
                 📵
               </button>
-              <button
-                onClick={acceptCall}
-                className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95 animate-bounce"
-                style={{ animationDelay: "0.1s" }}
-              >
+              <button onClick={acceptCall} className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95 animate-bounce" style={{ animationDelay: "0.1s" }}>
                 📞
               </button>
             </div>
@@ -376,7 +388,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         </div>
       )}
 
-      {/* Outgoing Call / Ringing UI */}
+      {/* Outgoing Call UI */}
       {callState.isCalling && !callState.isInCall && (
         <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-xl flex items-center justify-center">
           <div className="bg-card rounded-3xl p-8 shadow-2xl border border-border max-w-sm w-full mx-4 text-center animate-fade-in-up">
@@ -385,10 +397,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             </div>
             <h2 className="text-xl font-black text-foreground mb-1">{callState.remoteUser?.name}</h2>
             <p className="text-muted-foreground text-sm font-bold mb-6">কল করা হচ্ছে...</p>
-            <button
-              onClick={endCall}
-              className="w-16 h-16 mx-auto bg-destructive rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95"
-            >
+            <button onClick={endCall} className="w-16 h-16 mx-auto bg-destructive rounded-full flex items-center justify-center text-2xl shadow-lg hover:opacity-90 transition active:scale-95">
               📵
             </button>
           </div>
@@ -398,22 +407,25 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
       {/* In-Call UI */}
       {callState.isInCall && (
         <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
-          {/* Video area */}
           {callState.callType === "video" ? (
             <div className="flex-1 relative">
               <video
-                ref={remoteVideoRef}
+                ref={remoteVideoCallbackRef}
                 autoPlay
                 playsInline
                 className="w-full h-full object-cover"
               />
               <video
-                ref={localVideoRef}
+                ref={localVideoCallbackRef}
                 autoPlay
                 playsInline
                 muted
                 className="absolute top-4 right-4 w-32 h-44 md:w-40 md:h-56 rounded-2xl object-cover border-2 border-primary shadow-xl"
               />
+              <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 pt-6">
+                <h2 className="text-white font-black text-lg text-center">{callState.remoteUser?.name}</h2>
+                <p className="text-white/60 text-sm font-bold text-center">{formatDuration(callState.callDuration)}</p>
+              </div>
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
@@ -424,18 +436,14 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                 <h2 className="text-2xl font-black text-white mb-2">{callState.remoteUser?.name}</h2>
                 <p className="text-white/60 text-lg font-bold">{formatDuration(callState.callDuration)}</p>
               </div>
-              {/* Hidden audio elements */}
-              <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
-              <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
             </div>
           )}
 
-          {/* Call info bar */}
-          {callState.callType === "video" && (
-            <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 pt-6">
-              <h2 className="text-white font-black text-lg text-center">{callState.remoteUser?.name}</h2>
-              <p className="text-white/60 text-sm font-bold text-center">{formatDuration(callState.callDuration)}</p>
-            </div>
+          {/* Always-mounted hidden audio/video elements for stream playback */}
+          {callState.callType === "audio" && (
+            <>
+              <audio ref={(el) => { if (el && remoteStreamRef.current) { el.srcObject = remoteStreamRef.current; el.play().catch(() => {}); } }} autoPlay playsInline className="hidden" />
+            </>
           )}
 
           {/* Controls */}
