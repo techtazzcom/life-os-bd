@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { DayData, Goal, PermNote, NamazTimes, ExtraSettings } from "./types";
+import type { DayData, Goal, PermNote, NamazTimes, ExtraSettings, Habit, Transaction } from "./types";
 import type { Json } from "@/integrations/supabase/types";
 
 export type { DayData, Goal, PermNote, NamazTimes, ExtraSettings };
@@ -124,6 +124,67 @@ export async function saveExtraSettings(settings: ExtraSettings) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
   await supabase.from('user_settings').update({ extra_settings: settings as unknown as Json }).eq('user_id', user.id);
+}
+
+// --- Persistent data: Accounts ---
+export async function getAccounts(): Promise<Record<string, { trans: Transaction[] }>> {
+  const s = await getSettings();
+  return s ? ((s as any).accounts as Record<string, { trans: Transaction[] }>) || {} : {};
+}
+
+export async function saveAccounts(accounts: Record<string, { trans: Transaction[] }>) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('user_settings').update({ accounts: accounts as unknown as Json } as any).eq('user_id', user.id);
+}
+
+// --- Persistent data: Quick Notes ---
+export async function getQuickNotes(): Promise<string[]> {
+  const s = await getSettings();
+  return s ? ((s as any).quick_notes as string[]) || [''] : [''];
+}
+
+export async function saveQuickNotes(notes: string[]) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('user_settings').update({ quick_notes: notes as unknown as Json } as any).eq('user_id', user.id);
+}
+
+// --- Persistent data: Habit Definitions ---
+export async function getHabitDefinitions(): Promise<Habit[]> {
+  const s = await getSettings();
+  return s ? ((s as any).habit_definitions as Habit[]) || [] : [];
+}
+
+export async function saveHabitDefinitions(habits: Habit[]) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('user_settings').update({ habit_definitions: habits as unknown as Json } as any).eq('user_id', user.id);
+}
+
+// --- Monthly expenses: load all expenses for current month ---
+export async function getMonthlyExpenses(): Promise<number> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 0;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const startDate = `${year}-${month}-01`;
+  const endDate = `${year}-${month}-31`;
+  
+  const { data } = await supabase
+    .from('user_data')
+    .select('data_content')
+    .eq('user_id', user.id)
+    .gte('date_key', startDate)
+    .lte('date_key', endDate);
+  
+  if (!data) return 0;
+  return data.reduce((total, row) => {
+    const dayData = row.data_content as unknown as DayData;
+    const dayExpenses = dayData?.expenses || [];
+    return total + dayExpenses.reduce((s, e) => s + (e.amt || 0), 0);
+  }, 0);
 }
 
 export function getTodayStr(): string {
