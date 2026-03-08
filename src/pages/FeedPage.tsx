@@ -795,6 +795,7 @@ const FeedPage = () => {
         title="পোস্ট ডিলেট করবেন?"
         description="এই পোস্টটি স্থায়ীভাবে মুছে ফেলা হবে।"
       />
+      <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
     </div>
   );
 };
