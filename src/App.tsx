@@ -11,6 +11,7 @@ import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
 import ChatPage from "./pages/ChatPage";
 import FeedPage from "./pages/FeedPage";
+import FeedPage from "./pages/FeedPage";
 
 const queryClient = new QueryClient();
 
