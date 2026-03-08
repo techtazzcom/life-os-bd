@@ -11,6 +11,7 @@ interface Profile {
   email: string;
   is_online?: boolean;
   last_seen?: string | null;
+  avatar_url?: string | null;
 }
 
 interface Message {
