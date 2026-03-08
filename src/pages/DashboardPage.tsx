@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { signOut, getProfile, loadDayData, saveDayData, getGoals, saveGoals, getPermNotes, savePermNotes, getNamazTimes, getExtraSettings, saveExtraSettings, getTodayStr, type DayData, type Goal, type PermNote, type UserProfile, type NamazTimes, type ExtraSettings } from "@/lib/dataStore";
 import type { Medicine } from "@/lib/types";
@@ -49,6 +49,21 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   const isToday = selectedDate === getTodayStr();
+
+  // Auto-switch to new day at midnight
+  useEffect(() => {
+    const checkDateChange = () => {
+      const today = getTodayStr();
+      if (selectedDate !== today && selectedDate === prevDateRef.current) {
+        setSelectedDate(today);
+      }
+      prevDateRef.current = today;
+    };
+    const interval = setInterval(checkDateChange, 10000); // check every 10s
+    return () => clearInterval(interval);
+  }, [selectedDate]);
+
+  const prevDateRef = useRef(getTodayStr());
 
   useEffect(() => {
     const load = async () => {
