@@ -566,9 +566,7 @@ const ChatPage = () => {
             <div className="flex items-center gap-2">
               <button onClick={() => setSelectedUser(null)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition text-lg shrink-0">←</button>
               <button onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }} className="relative shrink-0">
-                <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${getAvatarColor(selectedUser.name)} flex items-center justify-center text-white text-xs font-bold`}>
-                  {selectedUser.name.charAt(0).toUpperCase()}
-                </div>
+                <UserAvatar name={selectedUser.name} avatarUrl={selectedUser.avatar_url} size={36} />
                 {selectedUser.is_online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-card rounded-full" />}
               </button>
               <div className="flex-1 min-w-0" onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }}>
