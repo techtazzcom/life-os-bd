@@ -68,6 +68,14 @@ function generateNotifications(data: DayData, namazTimes: NamazTimes, extraSetti
     notifs.push({ id: 'diary', icon: '📝', message: 'আজ ডায়েরিতে কিছু লেখা হয়নি', type: 'info' });
   }
 
+  // Missed medicines
+  if (data.medicineDoses) {
+    const missed = data.medicineDoses.filter(d => !d.taken && currentTime > d.time);
+    if (missed.length > 0) {
+      notifs.push({ id: 'medicine', icon: '💊', message: `${missed.length}টি ওষুধ খাওয়া মিস হয়েছে!`, type: 'warning' });
+    }
+  }
+
   return notifs;
 }
 

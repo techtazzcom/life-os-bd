@@ -120,6 +120,16 @@ const DashboardPage = () => {
           </div>
           <div className="md:col-span-4 space-y-4 md:space-y-6">
             <NamazTracker namaz={data.namaz} onNamazChange={namaz => updateData({ namaz })} />
+            <MedicineCard
+              medicines={extraSettings.medicines || []}
+              doses={data.medicineDoses || []}
+              onMedicinesChange={(medicines: Medicine[]) => {
+                const newSettings = { ...extraSettings, medicines };
+                setExtraSettings(newSettings);
+                saveExtraSettings(newSettings);
+              }}
+              onDosesChange={medicineDoses => updateData({ medicineDoses })}
+            />
             <ExpenseCard expenses={data.expenses} onExpensesChange={expenses => updateData({ expenses })} />
             <HabitCard habits={data.habits} onHabitsChange={habits => updateData({ habits })} />
             <QuickNoteCard notes={data.quickNotesArray} onNotesChange={quickNotesArray => updateData({ quickNotesArray })} />
