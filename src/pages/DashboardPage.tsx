@@ -162,6 +162,7 @@ const DashboardPage = () => {
       {showSettings && <SettingsModal habits={data.habits} onHabitsChange={habits => updateData({ habits })} onClose={() => setShowSettings(false)} />}
       {showProfile && profile && <ProfileModal user={profile} onClose={() => { setShowProfile(false); getProfile().then(setProfile); }} onLogout={handleLogout} />}
       <NoDataDialog open={showNoData} onOpenChange={setShowNoData} date={selectedDate} />
+      <NewDayDialog open={showNewDay} onClose={() => setShowNewDay(false)} userName={profile?.name || 'User'} />
       <SoundAlertManager data={data} namazTimes={namazTimes} extraSettings={extraSettings} />
     </div>
   );
