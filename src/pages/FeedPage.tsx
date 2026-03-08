@@ -129,6 +129,24 @@ const FeedPage = () => {
     getMyStatus().then(setUserStatus);
   }, []);
 
+  // Unread messages count
+  useEffect(() => {
+    if (!currentUserId) return;
+    const loadUnread = async () => {
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_id", currentUserId)
+        .eq("read", false);
+      setUnreadMsgCount(count || 0);
+    };
+    loadUnread();
+    const channel = supabase.channel("feed-msg-unread")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `receiver_id=eq.${currentUserId}` }, () => loadUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId]);
+
   // Load profiles
   useEffect(() => {
     const load = async () => {
