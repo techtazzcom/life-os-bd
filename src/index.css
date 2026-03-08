@@ -150,3 +150,37 @@
   text-decoration: line-through;
   opacity: 0.5;
 }
+
+/* Fix mobile date/time inputs showing blank */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  min-height: 2.75rem;
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* Ensure placeholder text is visible on mobile */
+input[type="date"]::before,
+input[type="time"]::before,
+input[type="datetime-local"]::before {
+  content: attr(placeholder);
+  color: hsl(var(--muted-foreground));
+  width: 100%;
+}
+
+input[type="date"]:valid::before,
+input[type="time"]:valid::before,
+input[type="datetime-local"]:valid::before,
+input[type="date"]:focus::before,
+input[type="time"]:focus::before,
+input[type="datetime-local"]:focus::before {
+  display: none;
+}
