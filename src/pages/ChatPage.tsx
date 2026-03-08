@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import UserProfileDialog from "@/components/chat/UserProfileDialog";
 import { useCall } from "@/components/call/CallProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
+import UserAvatar, { getAvatarColor } from "@/components/chat/UserAvatar";
 
 interface Profile {
   user_id: string;
