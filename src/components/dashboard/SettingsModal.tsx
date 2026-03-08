@@ -92,9 +92,9 @@ const SettingsModal = ({ habits, onHabitsChange, onClose }: Props) => {
                   </div>
                   <button
                     onClick={() => toggleSound(f.key)}
-                    className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ml-3 ${soundSettings[f.key] ? 'bg-life-emerald' : 'bg-muted'}`}
+                    className={`relative w-14 h-8 rounded-full transition-colors duration-300 shrink-0 ml-3 ${soundSettings[f.key] ? 'bg-life-emerald' : 'bg-muted-foreground/30'}`}
                   >
-                    <span className={`absolute top-0.5 w-6 h-6 bg-card rounded-full shadow transition-transform ${soundSettings[f.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    <span className={`absolute top-1 left-1 w-6 h-6 bg-card rounded-full shadow-md transition-transform duration-300 ${soundSettings[f.key] ? 'translate-x-6' : 'translate-x-0'}`} />
                   </button>
                 </div>
               ))}
