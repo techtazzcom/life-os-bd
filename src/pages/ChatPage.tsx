@@ -793,7 +793,7 @@ const ChatPage = () => {
   // ===== MOBILE LAYOUT =====
   return (
     <div className="bg-background min-h-screen flex flex-col">
-      {!selectedUser ? (
+      {!selectedUser && !selectedGroup ? (
         <div className="flex flex-col h-screen">
           {/* Mobile Header */}
           <div className="sticky top-0 z-30 bg-card px-4 pt-3 pb-2">
