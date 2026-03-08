@@ -181,7 +181,10 @@ const ChatPage = () => {
                     {u.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="font-bold text-sm text-foreground truncate">{u.name}</p>
+                    <p
+                      className="font-bold text-sm text-foreground truncate hover:text-primary cursor-pointer transition"
+                      onClick={(e) => { e.stopPropagation(); setProfileUserId(u.user_id); setProfileOpen(true); }}
+                    >{u.name}</p>
                     <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
                   </div>
                   {unreadCounts[u.user_id] > 0 && (
