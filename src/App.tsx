@@ -10,6 +10,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import DashboardPage from "./pages/DashboardPage";
+import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 import ChatPage from "./pages/ChatPage";
 import FeedPage from "./pages/FeedPage";
