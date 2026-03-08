@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { isAdmin, getAllUsers, getAdminStats, getActivityLogs, updateUserStatus, toggleVerified, sendAdminNotification, getAppeals, updateAppealStatus, deleteUserAccount, type AdminUser, type ActivityLog, type Appeal } from "@/lib/adminStore";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Users, UserCheck, UserX, Lock, Unlock, Eye, Bell, Activity, Search, ArrowLeft, BadgeCheck, Ban, Clock, Send, Trash2, LogIn, FileText, AlertTriangle, Plus, X, Flag, MessageSquare, ToggleLeft, ToggleRight } from "lucide-react";
+import { Shield, Users, UserCheck, UserX, Lock, Unlock, Eye, Bell, Activity, Search, ArrowLeft, BadgeCheck, Ban, Clock, Send, Trash2, LogIn, FileText, AlertTriangle, Plus, X, Flag, MessageSquare, ToggleLeft, ToggleRight, Settings, Upload, Image } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { bn } from "date-fns/locale";
 import { toast } from "sonner";
