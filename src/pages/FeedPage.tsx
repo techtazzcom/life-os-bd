@@ -64,12 +64,33 @@ const CATEGORIES = [
   { value: "health", label: "স্বাস্থ্য", emoji: "💪" },
 ];
 
+// Auto-detect category from content
+const detectCategory = (content: string): string => {
+  const lower = content.toLowerCase();
+  const keywords: Record<string, string[]> = {
+    tech: ["কোড", "প্রোগ্রামিং", "সফটওয়্যার", "ডেভেলপ", "টেক", "কম্পিউটার", "ল্যাপটপ", "মোবাইল", "অ্যাপ", "ওয়েব", "এআই", "ai", "code", "programming", "tech", "software", "developer", "react", "javascript", "python", "html", "css", "api", "database", "server", "linux", "github"],
+    islamic: ["আল্লাহ", "নামাজ", "কুরআন", "হাদিস", "ইসলাম", "মসজিদ", "রমজান", "ঈদ", "দোয়া", "জুমা", "সালাত", "তাওবা", "জান্নাত", "রাসূল", "সুন্নাহ", "ইবাদত", "যাকাত", "হজ্জ", "রোজা", "ইফতার", "সেহরি"],
+    health: ["স্বাস্থ্য", "ব্যায়াম", "ডাক্তার", "ওষুধ", "হাসপাতাল", "রোগ", "চিকিৎসা", "ফিটনেস", "যোগ", "ডায়েট", "ঘুম", "মানসিক", "স্ট্রেস", "health", "gym", "exercise", "doctor"],
+    education: ["পড়াশোনা", "পরীক্ষা", "বিশ্ববিদ্যালয়", "স্কুল", "কলেজ", "শিক্ষা", "বই", "গবেষণা", "পড়া", "লেখা", "জ্ঞান", "শিক্ষক", "ছাত্র", "রেজাল্ট", "পাঠ", "study", "exam", "university", "school"],
+    funny: ["হাহা", "মজা", "জোকস", "ফানি", "হাসি", "কৌতুক", "😂", "🤣", "lol", "funny", "joke", "haha"],
+    news: ["খবর", "সংবাদ", "রাজনীতি", "সরকার", "নির্বাচন", "আন্দোলন", "প্রতিবাদ", "ব্রেকিং", "দুর্ঘটনা", "আইন", "news", "breaking", "politics"],
+    life: ["জীবন", "ভালোবাসা", "পরিবার", "বন্ধু", "স্বপ্ন", "অনুভূতি", "মন", "কষ্ট", "সুখ", "দুঃখ", "ভ্রমণ", "প্রকৃতি", "গান", "সিনেমা", "ছবি", "রান্না", "খাবার"],
+  };
+  
+  let bestCat = "general";
+  let bestScore = 0;
+  for (const [cat, words] of Object.entries(keywords)) {
+    const score = words.reduce((acc, w) => acc + (lower.includes(w) ? 1 : 0), 0);
+    if (score > bestScore) { bestScore = score; bestCat = cat; }
+  }
+  return bestCat;
+};
+
 const FeedPage = () => {
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState("");
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPostContent, setNewPostContent] = useState("");
-  const [newPostCategory, setNewPostCategory] = useState("general");
   const [posting, setPosting] = useState(false);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
@@ -77,10 +98,11 @@ const FeedPage = () => {
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; postId: string; name: string } | null>(null);
   const [replyInput, setReplyInput] = useState("");
   const [profiles, setProfiles] = useState<Record<string, PostProfile>>({});
-  const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [showReactedBy, setShowReactedBy] = useState<string | null>(null);
   const replyInputRef = useRef<HTMLInputElement>(null);
+  const viewTimers = useRef<Record<string, number>>({});
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Init
   useEffect(() => {
@@ -152,16 +174,31 @@ const FeedPage = () => {
       };
     });
 
-    // Algorithm: sort by interest score + engagement + recency
+    // Enhanced Algorithm: interest score + engagement + recency + diversity
     enriched.sort((a, b) => {
       const aInterest = interestMap[a.category] || 0;
       const bInterest = interestMap[b.category] || 0;
-      const aEngagement = a.likes_count * 2 + a.comments_count * 3;
-      const bEngagement = b.likes_count * 2 + b.comments_count * 3;
-      const aAge = (Date.now() - new Date(a.created_at).getTime()) / 3600000; // hours
+      
+      // Engagement score (weighted: comments > likes)
+      const aEngagement = a.likes_count * 2 + a.comments_count * 4;
+      const bEngagement = b.likes_count * 2 + b.comments_count * 4;
+      
+      // Recency decay (exponential)
+      const aAge = (Date.now() - new Date(a.created_at).getTime()) / 3600000;
       const bAge = (Date.now() - new Date(b.created_at).getTime()) / 3600000;
-      const aScore = (aInterest * 10) + aEngagement - (aAge * 0.5);
-      const bScore = (bInterest * 10) + bEngagement - (bAge * 0.5);
+      const aDecay = Math.exp(-aAge * 0.08);
+      const bDecay = Math.exp(-bAge * 0.08);
+      
+      // Engagement velocity (engagement per hour)
+      const aVelocity = aAge > 0 ? aEngagement / Math.max(aAge, 0.5) : aEngagement * 2;
+      const bVelocity = bAge > 0 ? bEngagement / Math.max(bAge, 0.5) : bEngagement * 2;
+      
+      // Boost for posts by others (not own posts)
+      const aOtherBoost = a.user_id !== currentUserId ? 1.2 : 1;
+      const bOtherBoost = b.user_id !== currentUserId ? 1.2 : 1;
+      
+      const aScore = ((aInterest * 15) + aEngagement + (aVelocity * 3)) * aDecay * aOtherBoost;
+      const bScore = ((bInterest * 15) + bEngagement + (bVelocity * 3)) * bDecay * bOtherBoost;
       return bScore - aScore;
     });
 
@@ -191,6 +228,38 @@ const FeedPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [currentUserId, loadPosts, expandedComments]);
 
+  // View-time tracking with IntersectionObserver
+  useEffect(() => {
+    if (!currentUserId) return;
+    
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const postId = entry.target.getAttribute("data-post-id");
+        if (!postId) return;
+        
+        if (entry.isIntersecting) {
+          viewTimers.current[postId] = Date.now();
+        } else if (viewTimers.current[postId]) {
+          const viewTime = (Date.now() - viewTimers.current[postId]) / 1000;
+          delete viewTimers.current[postId];
+          
+          if (viewTime >= 3) {
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+              const boost = Math.min(Math.floor(viewTime / 3), 3);
+              for (let i = 0; i < boost; i++) trackInterest(post.category);
+            }
+          }
+        }
+      });
+    }, { threshold: 0.5 });
+    
+    document.querySelectorAll("[data-post-id]").forEach(el => {
+      observerRef.current?.observe(el);
+    });
+    
+    return () => { observerRef.current?.disconnect(); };
+  }, [currentUserId, posts]);
   // Track interest
   const trackInterest = async (category: string) => {
     if (!currentUserId) return;
@@ -218,12 +287,13 @@ const FeedPage = () => {
   const createPost = async () => {
     if (!newPostContent.trim() || !currentUserId) return;
     setPosting(true);
+    const autoCategory = detectCategory(newPostContent);
     await supabase.from("posts").insert({
       user_id: currentUserId,
       content: newPostContent.trim(),
-      category: newPostCategory,
+      category: autoCategory,
     });
-    trackInterest(newPostCategory);
+    trackInterest(autoCategory);
     setNewPostContent("");
     setPosting(false);
   };
@@ -331,7 +401,7 @@ const FeedPage = () => {
     await supabase.from("posts").delete().eq("id", postId);
   };
 
-  const displayPosts = filterCategory ? posts.filter(p => p.category === filterCategory) : posts;
+  const displayPosts = posts;
 
   const timeAgo = (date: string) => {
     try {
@@ -355,70 +425,41 @@ const FeedPage = () => {
 
       <div className="max-w-2xl mx-auto w-full flex-1 pb-6 px-3 overflow-x-hidden">
         {/* Create Post */}
-        <div className="bg-card border border-border rounded-2xl mt-3 mb-3 p-3 sm:p-4 shadow-sm overflow-hidden">
-          <div className="flex gap-3">
-            <Avatar className="w-10 h-10 shrink-0">
+        <div className="bg-card border border-border rounded-2xl mt-3 mb-3 shadow-sm overflow-hidden">
+          <div className="flex items-start gap-3 p-3 sm:p-4">
+            <Avatar className="w-9 h-9 shrink-0 mt-0.5">
               <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
                 {profiles[currentUserId]?.name?.charAt(0) || "?"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <textarea
-                value={newPostContent}
-                onChange={e => setNewPostContent(e.target.value)}
-                placeholder="আপনার মনে কী আছে...?"
-                className="w-full bg-secondary/50 border border-border rounded-xl p-3 text-sm font-semibold text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 resize-none transition"
-                rows={3}
-              />
-              <div className="flex items-center justify-between mt-2 gap-2 flex-wrap sm:flex-nowrap">
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-1">
-                  {CATEGORIES.map(c => (
-                    <button
-                      key={c.value}
-                      onClick={() => setNewPostCategory(c.value)}
-                      className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold border transition ${
-                        newPostCategory === c.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-secondary text-muted-foreground border-border hover:border-primary"
-                      }`}
-                    >
-                      {c.emoji} {c.label}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={createPost}
-                  disabled={!newPostContent.trim() || posting}
-                  className="shrink-0 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-xs font-black hover:opacity-90 transition active:scale-95 disabled:opacity-50"
-                >
-                  {posting ? "..." : "পোস্ট"}
-                </button>
-              </div>
-            </div>
+            <textarea
+              value={newPostContent}
+              onChange={e => setNewPostContent(e.target.value)}
+              placeholder="আপনার মনে কী আছে...?"
+              className="flex-1 bg-transparent text-sm font-semibold text-foreground placeholder:text-muted-foreground outline-none resize-none min-h-[60px] pt-1.5"
+              rows={2}
+            />
           </div>
-        </div>
-
-        {/* Category Filter */}
-        <div className="mb-2 flex gap-1.5 overflow-x-auto no-scrollbar max-w-full">
-          <button
-            onClick={() => setFilterCategory(null)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-              !filterCategory ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:border-primary"
-            }`}
-          >
-            🔥 সব
-          </button>
-          {CATEGORIES.map(c => (
+          {newPostContent.trim() && (
+            <div className="px-3 pb-1">
+              <span className="text-[10px] text-muted-foreground bg-secondary/60 rounded-full px-2 py-0.5 font-bold">
+                {(() => {
+                  const cat = detectCategory(newPostContent);
+                  const info = CATEGORIES.find(c => c.value === cat);
+                  return info ? `${info.emoji} ${info.label}` : "📝 সাধারণ";
+                })()}
+              </span>
+            </div>
+          )}
+          <div className="border-t border-border px-3 py-2 flex justify-end">
             <button
-              key={c.value}
-              onClick={() => setFilterCategory(filterCategory === c.value ? null : c.value)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-                filterCategory === c.value ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:border-primary"
-              }`}
+              onClick={createPost}
+              disabled={!newPostContent.trim() || posting}
+              className="bg-primary text-primary-foreground px-5 py-1.5 rounded-full text-xs font-black hover:opacity-90 transition active:scale-95 disabled:opacity-50"
             >
-              {c.emoji} {c.label}
+              {posting ? "..." : "পোস্ট করুন"}
             </button>
-          ))}
+          </div>
         </div>
 
         {/* Posts */}
@@ -437,7 +478,7 @@ const FeedPage = () => {
             const catInfo = CATEGORIES.find(c => c.value === post.category);
 
             return (
-              <div key={post.id} className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden max-w-full">
+              <div key={post.id} data-post-id={post.id} className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden max-w-full">
                 {/* Post Header */}
                 <div className="flex items-center gap-3 p-4 pb-2">
                   <Avatar className="w-10 h-10 shrink-0">
