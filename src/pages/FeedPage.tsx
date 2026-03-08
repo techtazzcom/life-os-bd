@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { bn } from "date-fns/locale";
 import { getMyStatus } from "@/lib/adminStore";
+import { BadgeCheck } from "lucide-react";
+import UserProfileDialog from "@/components/chat/UserProfileDialog";
 
 interface PostProfile {
   name: string;
