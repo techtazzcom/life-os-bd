@@ -819,48 +819,79 @@ const ChatPage = () => {
               />
             </div>
           </div>
-          {/* Online strip */}
-          {users.filter(u => u.is_online).length > 0 && (
-            <div className="px-3 py-2.5 flex gap-2 overflow-x-auto no-scrollbar border-b border-border/30">
-              {users.filter(u => u.is_online).map(u => (
-                <button key={u.user_id} onClick={() => setSelectedUser(u)} className="flex flex-col items-center gap-1 min-w-[56px]">
-                  <div className="relative">
-                    <UserAvatar name={u.name} avatarUrl={u.avatar_url} size={56} className="shadow-md" />
-                    <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-green-500 border-2 border-card rounded-full" />
+          {/* DM / Group Tabs - Mobile */}
+          <div className="flex border-b border-border shrink-0">
+            <button onClick={() => { setChatMode("dm"); setSelectedGroup(null); }} className={`flex-1 py-2 text-sm font-bold transition ${chatMode === "dm" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>💬 চ্যাট</button>
+            <button onClick={() => { setChatMode("group"); setSelectedUser(null); }} className={`flex-1 py-2 text-sm font-bold transition ${chatMode === "group" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>👥 গ্রুপ</button>
+          </div>
+
+          {chatMode === "dm" ? (
+            <>
+              {/* Online strip */}
+              {users.filter(u => u.is_online).length > 0 && (
+                <div className="px-3 py-2.5 flex gap-2 overflow-x-auto no-scrollbar border-b border-border/30">
+                  {users.filter(u => u.is_online).map(u => (
+                    <button key={u.user_id} onClick={() => setSelectedUser(u)} className="flex flex-col items-center gap-1 min-w-[56px]">
+                      <div className="relative">
+                        <UserAvatar name={u.name} avatarUrl={u.avatar_url} size={56} className="shadow-md" />
+                        <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-green-500 border-2 border-card rounded-full" />
+                      </div>
+                      <span className="text-[11px] text-muted-foreground truncate w-14 text-center">{u.name.split(" ")[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Conversations */}
+              <div className="flex-1 overflow-y-auto no-scrollbar">
+                {filteredConversations.map(conv => (
+                  <button key={conv.user.user_id} onClick={() => setSelectedUser(conv.user)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/60 transition active:bg-secondary">
+                    <div className="relative shrink-0">
+                      <UserAvatar name={conv.user.name} avatarUrl={conv.user.avatar_url} size={56} />
+                      {conv.user.is_online && <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-[2.5px] border-card rounded-full" />}
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center justify-between">
+                        <p className={`text-[15px] truncate ${conv.unreadCount > 0 ? 'font-bold text-foreground' : 'font-medium text-foreground'}`}>{conv.user.name}</p>
+                        {conv.lastMessageTime && <span className={`text-[11px] shrink-0 ml-2 ${conv.unreadCount > 0 ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>{formatTime(conv.lastMessageTime)}</span>}
+                      </div>
+                      {conv.lastMessage ? (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          {conv.isMine && <span className="text-muted-foreground text-[12px] shrink-0">আপনি:</span>}
+                          <p className={`text-[13px] truncate ${conv.unreadCount > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>{conv.lastMessage}</p>
+                        </div>
+                      ) : (
+                        <p className="text-[13px] text-muted-foreground/50 mt-0.5">মেসেজ পাঠান</p>
+                      )}
+                    </div>
+                    {conv.unreadCount > 0 && <span className="w-5 h-5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center shrink-0">{conv.unreadCount > 9 ? "9+" : conv.unreadCount}</span>}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* Group List - Mobile */
+            <div className="flex-1 overflow-y-auto no-scrollbar">
+              {groups.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <div className="text-4xl mb-3">👥</div>
+                  <p className="text-sm font-bold">কোনো গ্রুপ নেই</p>
+                  <p className="text-xs mt-1">👥 বাটন দিয়ে নতুন গ্রুপ তৈরি করুন</p>
+                </div>
+              ) : groups.map(g => (
+                <button key={g.id} onClick={() => { setSelectedGroup(g); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/60 transition active:bg-secondary">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-2xl shrink-0">👥</div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[15px] font-bold text-foreground truncate">{g.name}</p>
+                      {g.last_message_time && <span className="text-[11px] text-muted-foreground shrink-0">{formatTime(g.last_message_time)}</span>}
+                    </div>
+                    <p className="text-[13px] text-muted-foreground truncate mt-0.5">{g.last_message || `${g.member_count} জন সদস্য`}</p>
                   </div>
-                  <span className="text-[11px] text-muted-foreground truncate w-14 text-center">{u.name.split(" ")[0]}</span>
                 </button>
               ))}
             </div>
           )}
-          {/* Conversations */}
-          <div className="flex-1 overflow-y-auto no-scrollbar">
-            {filteredConversations.map(conv => (
-              <button key={conv.user.user_id} onClick={() => setSelectedUser(conv.user)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/60 transition active:bg-secondary">
-                <div className="relative shrink-0">
-                  <UserAvatar name={conv.user.name} avatarUrl={conv.user.avatar_url} size={56} />
-                  {conv.user.is_online && <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-[2.5px] border-card rounded-full" />}
-                </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="flex items-center justify-between">
-                    <p className={`text-[15px] truncate ${conv.unreadCount > 0 ? 'font-bold text-foreground' : 'font-medium text-foreground'}`}>{conv.user.name}</p>
-                    {conv.lastMessageTime && <span className={`text-[11px] shrink-0 ml-2 ${conv.unreadCount > 0 ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>{formatTime(conv.lastMessageTime)}</span>}
-                  </div>
-                  {conv.lastMessage ? (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {conv.isMine && <span className="text-muted-foreground text-[12px] shrink-0">আপনি:</span>}
-                      <p className={`text-[13px] truncate ${conv.unreadCount > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>{conv.lastMessage}</p>
-                    </div>
-                  ) : (
-                    <p className="text-[13px] text-muted-foreground/50 mt-0.5">মেসেজ পাঠান</p>
-                  )}
-                </div>
-                {conv.unreadCount > 0 && (
-                  <span className="w-5 h-5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center shrink-0">{conv.unreadCount > 9 ? "9+" : conv.unreadCount}</span>
-                )}
-              </button>
-            ))}
           </div>
         </div>
       ) : (
