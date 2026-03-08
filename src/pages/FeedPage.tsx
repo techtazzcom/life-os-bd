@@ -355,7 +355,7 @@ const FeedPage = () => {
 
       <div className="max-w-2xl mx-auto w-full flex-1 pb-6 px-3 overflow-x-hidden">
         {/* Create Post */}
-        <div className="bg-card border border-border rounded-2xl m-3 p-4 shadow-sm">
+        <div className="bg-card border border-border rounded-2xl mt-3 mb-3 p-3 sm:p-4 shadow-sm overflow-hidden">
           <div className="flex gap-3">
             <Avatar className="w-10 h-10 shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
