@@ -501,7 +501,7 @@ const FeedPage = () => {
                   </div>
                   {isMyPost && (
                     <button
-                      onClick={() => deletePost(post.id)}
+                      onClick={() => setDeletePostId(post.id)}
                       className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition text-sm"
                     >
                       🗑️
