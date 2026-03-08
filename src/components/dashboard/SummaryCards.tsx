@@ -9,7 +9,7 @@ const SummaryCards = ({ data }: { data: DayData }) => {
     { icon: "✅", label: "কাজ সম্পন্ন", value: `${tasksDone} টি`, color: "border-b-life-emerald bg-life-emerald-light" },
     { icon: "💰", label: "আজকের খরচ", value: `৳${todayExp}`, color: "border-b-primary bg-life-blue-light" },
     { icon: "📊", label: "রুটিন পালন", value: `${routinePerc}%`, color: "border-b-life-orange bg-life-orange-light" },
-    { icon: "🛌", label: "মোট ঘুম", value: `${data.sleepHours || ০} ঘণ্টা`, color: "border-b-life-indigo bg-life-indigo-light" },
+    { icon: "🛌", label: "মোট ঘুম", value: `${data.sleepHours || 0} ঘণ্টা`, color: "border-b-life-indigo bg-life-indigo-light" },
   ];
 
   return (
