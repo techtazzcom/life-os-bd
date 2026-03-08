@@ -7,6 +7,8 @@ interface Profile {
   user_id: string;
   name: string;
   email: string;
+  is_online?: boolean;
+  last_seen?: string | null;
 }
 
 interface Message {
