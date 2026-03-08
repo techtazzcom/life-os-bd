@@ -20,6 +20,7 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
   const [pendingDate, setPendingDate] = useState(selectedDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Load unread message count
