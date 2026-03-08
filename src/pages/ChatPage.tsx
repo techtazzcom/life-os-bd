@@ -34,11 +34,21 @@ const ChatPage = () => {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // Get current user
+  // Get current user & set online
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUserId(user.id);
+      if (user) {
+        setCurrentUserId(user.id);
+        // Set online
+        supabase.from("profiles").update({ is_online: true, last_seen: new Date().toISOString() } as any).eq("user_id", user.id);
+      }
     });
+    // Set offline on unmount
+    return () => {
+      if (currentUserId) {
+        supabase.from("profiles").update({ is_online: false, last_seen: new Date().toISOString() } as any).eq("user_id", currentUserId);
+      }
+    };
   }, []);
 
   // Load all users
