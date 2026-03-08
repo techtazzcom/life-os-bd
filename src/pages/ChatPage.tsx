@@ -324,6 +324,7 @@ const ChatPage = () => {
                         <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-card rounded-full" />
                       )}
                     </div>
+                  </button>
                   <div
                     className="min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }}
