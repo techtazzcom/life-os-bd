@@ -12,7 +12,10 @@ import UserProfileDialog from "@/components/chat/UserProfileDialog";
 import FeedNotifications from "@/components/feed/FeedNotifications";
 import FriendList from "@/components/feed/FriendList";
 import FeedSettingsModal from "@/components/feed/FeedSettingsModal";
+import LinkPreview from "@/components/feed/LinkPreview";
 import { Settings } from "lucide-react";
+import { loadSpamWords, checkSpam, recordViolation, isSpamBanned } from "@/lib/spamChecker";
+import { toast } from "sonner";
 
 interface PostProfile {
   name: string;
