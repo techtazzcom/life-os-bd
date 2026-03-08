@@ -90,7 +90,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (!currentUserId) return;
-    supabase.from("profiles").select("user_id, name, email, is_online, last_seen").neq("user_id", currentUserId).then(({ data }) => {
+    supabase.from("profiles").select("user_id, name, email, is_online, last_seen, avatar_url").neq("user_id", currentUserId).then(({ data }) => {
       if (data) setUsers(data as Profile[]);
     });
   }, [currentUserId]);
