@@ -5,6 +5,30 @@ import UserProfileDialog from "@/components/chat/UserProfileDialog";
 import { useCall } from "@/components/call/CallProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import UserAvatar, { getAvatarColor } from "@/components/chat/UserAvatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
+
+interface ChatGroup {
+  id: string;
+  name: string;
+  description: string;
+  avatar_url: string;
+  created_by: string;
+  created_at: string;
+  member_count?: number;
+  last_message?: string;
+  last_message_time?: string;
+}
+
+interface GroupMessage {
+  id: string;
+  group_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+}
 
 interface Profile {
   user_id: string;
