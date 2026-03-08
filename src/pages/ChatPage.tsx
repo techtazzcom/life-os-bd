@@ -535,9 +535,7 @@ const ChatPage = () => {
               <button key={conv.user.user_id} onClick={() => setSelectedUser(conv.user)}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/60 transition active:bg-secondary">
                 <div className="relative shrink-0">
-                  <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${getAvatarColor(conv.user.name)} flex items-center justify-center text-white text-lg font-bold shadow-sm`}>
-                    {conv.user.name.charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar name={conv.user.name} avatarUrl={conv.user.avatar_url} size={56} />
                   {conv.user.is_online && <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-[2.5px] border-card rounded-full" />}
                 </div>
                 <div className="flex-1 min-w-0 text-left">
