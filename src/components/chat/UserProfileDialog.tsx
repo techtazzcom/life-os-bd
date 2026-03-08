@@ -4,9 +4,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BadgeCheck, UserPlus, MessageCircle, UserCheck, Clock, UserX } from "lucide-react";
+import { BadgeCheck, UserPlus, MessageCircle, UserCheck, Clock, ShieldBan, Flag, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -77,10 +77,17 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
   const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus>('none');
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showFriendMenu, setShowFriendMenu] = useState(false);
+  const [showReportInput, setShowReportInput] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const friendMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!userId || !open) return;
     setLoading(true);
+    setShowFriendMenu(false);
+    setShowReportInput(false);
+    setReportReason("");
 
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -122,6 +129,17 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
     load();
   }, [userId, open]);
 
+  // Click outside friend menu
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (friendMenuRef.current && !friendMenuRef.current.contains(e.target as Node)) {
+        setShowFriendMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return null;
     try {
@@ -154,7 +172,6 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
 
       if (error) throw error;
 
-      // Create notification for receiver
       await supabase.from("feed_notifications").insert({
         user_id: userId,
         actor_id: currentUserId,
@@ -165,7 +182,7 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
       setFriendshipStatus('pending_sent');
       setFriendshipId(data.id);
       toast.success("ফ্রেন্ড রিকোয়েস্ট পাঠানো হয়েছে!");
-    } catch (err) {
+    } catch {
       toast.error("কিছু সমস্যা হয়েছে!");
     }
     setActionLoading(false);
@@ -177,7 +194,6 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
     try {
       await supabase.from("friendships").update({ status: 'accepted' }).eq("id", friendshipId);
 
-      // Notify the requester
       const { data: friendship } = await supabase.from("friendships").select("*").eq("id", friendshipId).single();
       if (friendship) {
         await supabase.from("feed_notifications").insert({
@@ -190,7 +206,7 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
 
       setFriendshipStatus('accepted');
       toast.success("ফ্রেন্ড রিকোয়েস্ট গ্রহণ করা হয়েছে!");
-    } catch (err) {
+    } catch {
       toast.error("কিছু সমস্যা হয়েছে!");
     }
     setActionLoading(false);
@@ -203,8 +219,48 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
       await supabase.from("friendships").delete().eq("id", friendshipId);
       setFriendshipStatus('none');
       setFriendshipId(null);
+      setShowFriendMenu(false);
       toast.success(friendshipStatus === 'accepted' ? "আনফ্রেন্ড করা হয়েছে" : "রিকোয়েস্ট বাতিল করা হয়েছে");
-    } catch (err) {
+    } catch {
+      toast.error("কিছু সমস্যা হয়েছে!");
+    }
+    setActionLoading(false);
+  };
+
+  const blockUser = async () => {
+    if (!currentUserId || !userId) return;
+    setActionLoading(true);
+    try {
+      await supabase.from("user_blocks").insert({ blocker_id: currentUserId, blocked_id: userId });
+      // Also unfriend if friends
+      if (friendshipId) {
+        await supabase.from("friendships").delete().eq("id", friendshipId);
+        setFriendshipStatus('none');
+        setFriendshipId(null);
+      }
+      setShowFriendMenu(false);
+      toast.success("ব্লক করা হয়েছে");
+      onOpenChange(false);
+    } catch {
+      toast.error("কিছু সমস্যা হয়েছে!");
+    }
+    setActionLoading(false);
+  };
+
+  const reportUser = async () => {
+    if (!currentUserId || !userId || !reportReason.trim()) return;
+    setActionLoading(true);
+    try {
+      await supabase.from("reports").insert({
+        reporter_id: currentUserId,
+        reported_id: userId,
+        reason: reportReason.trim()
+      });
+      setShowReportInput(false);
+      setReportReason("");
+      setShowFriendMenu(false);
+      toast.success("রিপোর্ট পাঠানো হয়েছে। এডমিন পর্যালোচনা করবেন।");
+    } catch {
       toast.error("কিছু সমস্যা হয়েছে!");
     }
     setActionLoading(false);
@@ -301,16 +357,41 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
                     </Button>
                   )}
                   {friendshipStatus === 'accepted' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={cancelOrUnfriend}
-                      disabled={actionLoading}
-                      className="gap-2 rounded-xl font-bold"
-                    >
-                      <UserX size={16} />
-                      আনফ্রেন্ড
-                    </Button>
+                    <div className="relative" ref={friendMenuRef}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setShowFriendMenu(!showFriendMenu)}
+                        disabled={actionLoading}
+                        className="gap-2 rounded-xl font-bold border border-primary/30"
+                      >
+                        <UserCheck size={16} className="text-primary" />
+                        ফ্রেন্ড
+                        <ChevronDown size={14} />
+                      </Button>
+                      {showFriendMenu && (
+                        <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-xl shadow-xl z-50 min-w-[160px] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                          <button
+                            onClick={cancelOrUnfriend}
+                            className="w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-secondary/80 flex items-center gap-2 transition"
+                          >
+                            <UserPlus size={14} /> আনফ্রেন্ড
+                          </button>
+                          <button
+                            onClick={blockUser}
+                            className="w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-secondary/80 flex items-center gap-2 transition"
+                          >
+                            <ShieldBan size={14} /> ব্লক
+                          </button>
+                          <button
+                            onClick={() => { setShowReportInput(true); setShowFriendMenu(false); }}
+                            className="w-full px-4 py-2.5 text-sm font-bold text-destructive hover:bg-destructive/10 flex items-center gap-2 transition"
+                          >
+                            <Flag size={14} /> রিপোর্ট
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                   <Button
                     size="sm"
@@ -321,6 +402,26 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
                     <MessageCircle size={16} />
                     Message
                   </Button>
+                </div>
+              )}
+
+              {/* Report input */}
+              {showReportInput && (
+                <div className="mt-3 space-y-2">
+                  <textarea
+                    value={reportReason}
+                    onChange={e => setReportReason(e.target.value)}
+                    placeholder="রিপোর্টের কারণ লিখুন..."
+                    className="w-full p-2.5 bg-secondary rounded-xl border border-border text-sm text-foreground outline-none focus:border-primary transition resize-none h-16"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button size="sm" variant="outline" onClick={() => setShowReportInput(false)} className="h-7 text-xs rounded-lg">
+                      বাতিল
+                    </Button>
+                    <Button size="sm" onClick={reportUser} disabled={!reportReason.trim() || actionLoading} className="h-7 text-xs rounded-lg bg-destructive hover:bg-destructive/90">
+                      রিপোর্ট করুন
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

@@ -853,6 +853,7 @@ const FeedPage = () => {
         description="এই পোস্টটি স্থায়ীভাবে মুছে ফেলা হবে।"
       />
       <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
+      <FeedSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} currentUserId={currentUserId} profiles={profiles} />
     </div>
   );
 };
