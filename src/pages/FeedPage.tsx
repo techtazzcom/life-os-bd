@@ -331,6 +331,23 @@ const FeedPage = () => {
   // Create post
   const createPost = async () => {
     if (!newPostContent.trim() || !currentUserId) return;
+    // Check spam ban
+    if (spamBanStatus.banned) {
+      toast.error(spamBanStatus.permanent ? "আপনার পোস্ট করার অধিকার স্থায়ীভাবে বন্ধ।" : `আপনি ${new Date(spamBanStatus.banUntil!).toLocaleDateString('bn-BD')} পর্যন্ত পোস্ট করতে পারবেন না।`);
+      return;
+    }
+    // Check spam words
+    const matched = checkSpam(newPostContent, spamWords);
+    if (matched) {
+      const result = await recordViolation(currentUserId, matched, "post");
+      if (result.banned) {
+        setSpamBanStatus({ banned: true, permanent: result.permanent, banUntil: result.permanent ? null : new Date(Date.now() + result.banDays * 86400000).toISOString() });
+        toast.error(result.permanent ? "স্প্যামের কারণে আপনার পোস্ট করা স্থায়ীভাবে বন্ধ হয়েছে!" : `স্প্যামের কারণে ${result.banDays} দিনের জন্য পোস্ট/কমেন্ট বন্ধ!`);
+      } else {
+        toast.warning(`⚠️ "${matched}" স্প্যাম ওয়ার্ড! সতর্ক থাকুন।`);
+      }
+      return;
+    }
     setPosting(true);
     const autoCategory = detectCategory(newPostContent);
     await supabase.from("posts").insert({
