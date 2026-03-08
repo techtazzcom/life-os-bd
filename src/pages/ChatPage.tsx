@@ -75,6 +75,21 @@ const ChatPage = () => {
     };
   }, []);
 
+  // Real-time online status updates
+  useEffect(() => {
+    if (!currentUserId) return;
+    const channel = supabase.channel("profiles-online-status")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, (payload) => {
+        const updated = payload.new as any;
+        if (updated.user_id === currentUserId) return;
+        // Update users list
+        setUsers(prev => prev.map(u => u.user_id === updated.user_id ? { ...u, is_online: updated.is_online, last_seen: updated.last_seen } : u));
+        // Update selected user if it's the same person
+        setSelectedUser(prev => prev && prev.user_id === updated.user_id ? { ...prev, is_online: updated.is_online, last_seen: updated.last_seen } : prev);
+      }).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId]);
+
   useEffect(() => {
     if (!currentUserId) return;
     supabase.from("profiles").select("user_id, name, email, is_online, last_seen, avatar_url").neq("user_id", currentUserId).then(({ data }) => {
