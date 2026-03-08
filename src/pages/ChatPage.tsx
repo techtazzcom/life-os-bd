@@ -252,9 +252,7 @@ const ChatPage = () => {
                   style={{ width: 'calc(100% - 16px)' }}
                 >
                   <div className="relative shrink-0">
-                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getAvatarColor(conv.user.name)} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
-                      {conv.user.name.charAt(0).toUpperCase()}
-                    </div>
+                    <UserAvatar name={conv.user.name} avatarUrl={conv.user.avatar_url} size={48} />
                     {conv.user.is_online && (
                       <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-card rounded-full" />
                     )}
