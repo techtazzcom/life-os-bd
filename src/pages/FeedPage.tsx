@@ -129,9 +129,13 @@ const FeedPage = () => {
   // Init
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUserId(user.id);
+      if (user) {
+        setCurrentUserId(user.id);
+        isSpamBanned(user.id).then(setSpamBanStatus);
+      }
     });
     getMyStatus().then(setUserStatus);
+    loadSpamWords().then(setSpamWords);
   }, []);
 
   // Unread messages count
