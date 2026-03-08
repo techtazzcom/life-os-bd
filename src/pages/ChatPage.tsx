@@ -466,7 +466,7 @@ const ChatPage = () => {
                       </svg>
                     </button>
                   ) : (
-                    <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-primary text-xl shrink-0">
+                    <button onClick={() => { setNewMessage("👍"); setTimeout(() => sendMessage(), 50); }} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-primary text-xl shrink-0">
                       👍
                     </button>
                   )}
