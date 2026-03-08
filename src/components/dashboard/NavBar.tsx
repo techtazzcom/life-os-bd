@@ -27,7 +27,21 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
       <div className="max-w-6xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-lg text-lg">⚡</div>
-          <h1 className="text-xl md:text-2xl font-black tracking-tight text-foreground">Life <span className="text-primary">OS</span></h1>
+          <h1 className="text-xl md:text-2xl font-black tracking-tight text-foreground hidden sm:block">Life <span className="text-primary">OS</span></h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => onDateChange(e.target.value)}
+            className="bg-card border border-border rounded-full px-3 py-1.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+          <button
+            onClick={() => onDateChange(format(new Date(), 'yyyy-MM-dd'))}
+            className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition"
+          >
+            আজ
+          </button>
         </div>
         <div className="relative" ref={menuRef}>
           <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-sm font-bold text-foreground hover:border-primary transition">
