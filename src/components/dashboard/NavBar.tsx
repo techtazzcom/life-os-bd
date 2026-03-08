@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, onProfile, notificationSlot }: Props) => {
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingDate, setPendingDate] = useState(selectedDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -64,6 +66,14 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
             className="sm:hidden w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm"
           >
             📅
+          </button>
+
+          {/* Chat button */}
+          <button
+            onClick={() => navigate('/chat')}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm"
+          >
+            💬
           </button>
 
           {/* Profile */}
