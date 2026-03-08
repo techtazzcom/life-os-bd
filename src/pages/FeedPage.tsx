@@ -431,10 +431,12 @@ const FeedPage = () => {
     <div className="bg-background min-h-screen flex flex-col overflow-x-hidden">
       {/* Header */}
       <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border p-3 shadow-sm">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
+        <div className="max-w-2xl mx-auto flex items-center gap-2">
           <button onClick={() => navigate("/dashboard")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-lg shrink-0">←</button>
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground shadow text-base shrink-0">📰</div>
           <h1 className="text-lg font-black text-foreground flex-1 truncate">নিউজফিড</h1>
+          <FriendList currentUserId={currentUserId} profiles={profiles} onSelectUser={(uid) => { setProfileUserId(uid); setProfileOpen(true); }} />
+          <FeedNotifications currentUserId={currentUserId} profiles={profiles} />
           <button onClick={() => navigate("/chat")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0">💬</button>
         </div>
       </nav>
