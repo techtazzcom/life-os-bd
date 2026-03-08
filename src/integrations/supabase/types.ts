@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          address: string | null
+          blood_group: string | null
+          created_at: string
+          dob: string | null
+          email: string
+          hobby: string | null
+          id: string
+          institution: string | null
+          mobile: string | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          blood_group?: string | null
+          created_at?: string
+          dob?: string | null
+          email?: string
+          hobby?: string | null
+          id?: string
+          institution?: string | null
+          mobile?: string | null
+          name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          blood_group?: string | null
+          created_at?: string
+          dob?: string | null
+          email?: string
+          hobby?: string | null
+          id?: string
+          institution?: string | null
+          mobile?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_data: {
+        Row: {
+          created_at: string
+          data_content: Json
+          date_key: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_content?: Json
+          date_key: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_content?: Json
+          date_key?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          extra_settings: Json
+          goals: Json
+          id: string
+          namaz_times: Json
+          perm_notes: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extra_settings?: Json
+          goals?: Json
+          id?: string
+          namaz_times?: Json
+          perm_notes?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extra_settings?: Json
+          goals?: Json
+          id?: string
+          namaz_times?: Json
+          perm_notes?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
