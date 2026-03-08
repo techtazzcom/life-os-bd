@@ -15,7 +15,7 @@ const RegisterPage = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signUp(form.email, form.password, form.name);
+    const { error } = await signUp(form.email, form.password, form.name, { mobile: form.mobile, dob: form.dob, address: form.address });
     setLoading(false);
     if (error) {
       toast.error(error.message);

@@ -23,10 +23,10 @@ export interface UserProfile {
   avatar_url?: string;
 }
 
-export async function signUp(email: string, password: string, name: string) {
+export async function signUp(email: string, password: string, name: string, extra?: { mobile?: string; dob?: string; address?: string }) {
   const { data, error } = await supabase.auth.signUp({
     email, password,
-    options: { data: { name }, emailRedirectTo: window.location.origin }
+    options: { data: { name, mobile: extra?.mobile || '', dob: extra?.dob || '', address: extra?.address || '' }, emailRedirectTo: window.location.origin }
   });
   return { data, error };
 }
