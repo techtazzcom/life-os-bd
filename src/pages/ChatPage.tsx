@@ -666,6 +666,12 @@ const ChatPage = () => {
               <div className="flex items-center">
                 <button onClick={() => startCall(selectedUser.user_id, selectedUser.name, "audio")} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition active:scale-95 text-primary text-lg">📞</button>
                 <button onClick={() => startCall(selectedUser.user_id, selectedUser.name, "video")} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition active:scale-95 text-primary text-lg">📹</button>
+                <button
+                  onClick={() => setShowInsightPanel(true)}
+                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition active:scale-95 text-muted-foreground text-sm"
+                >
+                  ℹ️
+                </button>
               </div>
             </div>
           </div>
