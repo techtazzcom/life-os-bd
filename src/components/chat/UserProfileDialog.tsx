@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { BadgeCheck } from "lucide-react";
 
 interface Profile {
   user_id: string;
