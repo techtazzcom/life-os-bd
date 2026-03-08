@@ -47,6 +47,7 @@ const ChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [showInsightPanel, setShowInsightPanel] = useState(false);
   const { startCall } = useCall();
   const inputRef = useRef<HTMLInputElement>(null);
   const currentUserIdRef = useRef("");
@@ -354,8 +355,8 @@ const ChatPage = () => {
                     📹
                   </button>
                   <button
-                    onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }}
-                    className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-muted-foreground text-sm ml-1"
+                    onClick={() => setShowInsightPanel(prev => !prev)}
+                    className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-sm ml-1 ${showInsightPanel ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}
                     title="প্রোফাইল দেখুন"
                   >
                     ℹ️
@@ -381,7 +382,6 @@ const ChatPage = () => {
                   const timeDiff = prevMsg ? new Date(m.created_at).getTime() - new Date(prevMsg.created_at).getTime() : Infinity;
                   const showTimestamp = timeDiff > 300000;
 
-                  // Bubble radius logic for grouped messages
                   const isFirst = !sameSenderPrev || showTimestamp;
                   const isLast = !sameSenderNext || (nextMsg && new Date(nextMsg.created_at).getTime() - new Date(m.created_at).getTime() > 300000);
 
@@ -408,7 +408,6 @@ const ChatPage = () => {
                         </div>
                       )}
                       <div className={`flex ${isMine ? 'justify-end' : 'justify-start'} ${isFirst && !showTimestamp ? 'mt-3' : 'mt-[3px]'}`}>
-                        {/* Remote avatar on first message of group */}
                         {!isMine && (
                           <div className="w-8 mr-2 shrink-0 self-end">
                             {isLast && (
@@ -424,7 +423,6 @@ const ChatPage = () => {
                           }`}>
                             <p className="whitespace-pre-wrap break-words">{m.content}</p>
                           </div>
-                          {/* Hover time */}
                           <div className={`absolute top-1/2 -translate-y-1/2 ${isMine ? 'right-full mr-2' : 'left-full ml-2'} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap`}>
                             <span className="text-[11px] text-muted-foreground bg-card border border-border px-2 py-1 rounded-lg shadow-sm">
                               {formatMsgTime(m.created_at)}
@@ -482,6 +480,113 @@ const ChatPage = () => {
             </>
           )}
         </div>
+
+        {/* Right Insight Panel */}
+        {selectedUser && showInsightPanel && (
+          <div className="w-[340px] border-l border-border bg-card shrink-0 flex flex-col overflow-y-auto no-scrollbar">
+            {/* Close button */}
+            <div className="flex items-center justify-end px-4 pt-3">
+              <button
+                onClick={() => setShowInsightPanel(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-muted-foreground text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Profile Section */}
+            <div className="flex flex-col items-center px-6 pt-2 pb-5">
+              <div className="relative mb-3">
+                <UserAvatar name={selectedUser.name} avatarUrl={selectedUser.avatar_url} size={80} className="shadow-lg" />
+                {selectedUser.is_online && (
+                  <span className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-[3px] border-card rounded-full" />
+                )}
+              </div>
+              <h3 className="text-lg font-bold text-foreground">{selectedUser.name}</h3>
+              <p className="text-[13px] text-muted-foreground mt-0.5">
+                {selectedUser.is_online ? "সক্রিয়" : formatLastSeen(selectedUser.last_seen)}
+              </p>
+            </div>
+
+            {/* Action Buttons Row */}
+            <div className="flex items-center justify-center gap-6 pb-5 border-b border-border mx-4">
+              <button
+                onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }}
+                className="flex flex-col items-center gap-1.5 group"
+              >
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center group-hover:bg-accent transition-colors">
+                  <span className="text-sm">👤</span>
+                </div>
+                <span className="text-[11px] text-muted-foreground">প্রোফাইল</span>
+              </button>
+              <button
+                onClick={() => startCall(selectedUser.user_id, selectedUser.name, "audio")}
+                className="flex flex-col items-center gap-1.5 group"
+              >
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center group-hover:bg-accent transition-colors">
+                  <span className="text-sm">📞</span>
+                </div>
+                <span className="text-[11px] text-muted-foreground">অডিও কল</span>
+              </button>
+              <button
+                onClick={() => startCall(selectedUser.user_id, selectedUser.name, "video")}
+                className="flex flex-col items-center gap-1.5 group"
+              >
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center group-hover:bg-accent transition-colors">
+                  <span className="text-sm">📹</span>
+                </div>
+                <span className="text-[11px] text-muted-foreground">ভিডিও কল</span>
+              </button>
+            </div>
+
+            {/* Info Sections */}
+            <div className="flex-1">
+              {/* Recent Activity */}
+              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-base">🕐</span>
+                  <span className="text-[14px] text-foreground font-medium">সাম্প্রতিক কার্যকলাপ</span>
+                </div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Media */}
+              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-base">🖼️</span>
+                  <span className="text-[14px] text-foreground font-medium">মিডিয়া ও ফাইল</span>
+                </div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Notification */}
+              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-base">🔔</span>
+                  <span className="text-[14px] text-foreground font-medium">নোটিফিকেশন</span>
+                </div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Privacy */}
+              <button className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-secondary/60 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-base">🔒</span>
+                  <span className="text-[14px] text-foreground font-medium">গোপনীয়তা</span>
+                </div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
       </div>
