@@ -121,21 +121,20 @@ const ProfileModal = ({ user, onClose, onLogout }: Props) => {
         <form onSubmit={handleSave} className="space-y-4">
           {renderField("পূর্ণ নাম", "name")}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              {renderField("মোবাইল", "mobile")}
-              <label className="flex items-center gap-2 mt-1.5 ml-1 cursor-pointer">
-                <Switch checked={!!(form as any).hide_mobile} onCheckedChange={v => setForm(p => ({ ...p, hide_mobile: v }))} />
-                <span className="text-[11px] font-bold text-muted-foreground">শুধু আমি দেখব</span>
-              </label>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-muted-foreground ml-1">রক্তের গ্রুপ</label>
-              <select name="blood_group" value={form.blood_group || ''} onChange={handleChange} className="w-full p-3 bg-secondary border border-border rounded-2xl outline-none text-foreground">
-                <option value="">নির্বাচন</option>
-                {['A+','A-','B+','B-','O+','O-','AB+','AB-'].map(g => <option key={g} value={g}>{g}</option>)}
-              </select>
-            </div>
+          <div>
+            {renderField("মোবাইল", "mobile")}
+            <label className="flex items-center gap-2 mt-1.5 ml-1 cursor-pointer">
+              <Switch checked={!!(form as any).hide_mobile} onCheckedChange={v => setForm(p => ({ ...p, hide_mobile: v }))} />
+              <span className="text-[11px] font-bold text-muted-foreground">শুধু আমি দেখব</span>
+            </label>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-muted-foreground ml-1">রক্তের গ্রুপ</label>
+            <select name="blood_group" value={form.blood_group || ''} onChange={handleChange} className="w-full p-3 bg-secondary border border-border rounded-2xl outline-none text-foreground">
+              <option value="">নির্বাচন</option>
+              {['A+','A-','B+','B-','O+','O-','AB+','AB-'].map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
           </div>
 
           <div>
