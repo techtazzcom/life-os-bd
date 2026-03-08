@@ -64,7 +64,7 @@ const SettingsModal = ({ habitDefs, onHabitDefsChange, onClose }: Props) => {
               {(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map(k => (
                 <div key={k}>
                   <label className="text-xs font-bold text-muted-foreground">{k === 'fajr' ? 'ফজর' : k === 'dhuhr' ? 'যোহর' : k === 'asr' ? 'আসর' : k === 'maghrib' ? 'মাগরিব' : 'এশা'}</label>
-                  <input type="time" value={namazTimes[k]} onChange={e => setNamazTimes({ ...namazTimes, [k]: e.target.value })} className="w-full p-2 border border-border rounded-xl font-bold bg-secondary text-foreground outline-none" />
+                  <TimeInput value={namazTimes[k]} onChange={v => setNamazTimes({ ...namazTimes, [k]: v })} placeholder="HH:MM" className="w-full p-2 border border-border rounded-xl font-bold bg-secondary text-foreground outline-none" />
                 </div>
               ))}
             </div>
