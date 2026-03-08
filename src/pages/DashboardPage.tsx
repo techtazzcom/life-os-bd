@@ -66,11 +66,17 @@ const DashboardPage = () => {
   const [showNewDay, setShowNewDay] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Impersonation
+  const impersonateUserId = localStorage.getItem("impersonate_user_id");
+  const impersonateUserName = localStorage.getItem("impersonate_user_name");
+  const isImpersonating = !!impersonateUserId;
+
   const isToday = selectedDate === getTodayStr();
   const prevDateRef = useRef(getTodayStr());
 
   // Auto-switch to new day at midnight with greeting
   useEffect(() => {
+    if (isImpersonating) return;
     const checkDateChange = () => {
       const today = getTodayStr();
       if (today !== prevDateRef.current) {
@@ -81,47 +87,62 @@ const DashboardPage = () => {
     };
     const interval = setInterval(checkDateChange, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isImpersonating]);
 
   // Load date-specific data
   useEffect(() => {
     const load = async () => {
-      const saved = await loadDayData(selectedDate);
-      if (!saved && selectedDate !== getTodayStr()) {
-        setShowNoData(true);
-      }
-      
-      // For a new day, initialize habits from definitions (unchecked)
-      if (!saved && isToday) {
-        const defs = await getHabitDefinitions();
-        const freshHabits = defs.map(h => ({ ...h, checked: false }));
-        setData({ ...defaultDayData, habits: freshHabits });
-      } else if (saved) {
-        setData(saved);
+      if (isImpersonating) {
+        const saved = await loadDayDataForUser(impersonateUserId, selectedDate);
+        if (!saved && selectedDate !== getTodayStr()) setShowNoData(true);
+        setData(saved || defaultDayData);
       } else {
-        setData(defaultDayData);
+        const saved = await loadDayData(selectedDate);
+        if (!saved && selectedDate !== getTodayStr()) setShowNoData(true);
+        if (!saved && isToday) {
+          const defs = await getHabitDefinitions();
+          const freshHabits = defs.map(h => ({ ...h, checked: false }));
+          setData({ ...defaultDayData, habits: freshHabits });
+        } else if (saved) {
+          setData(saved);
+        } else {
+          setData(defaultDayData);
+        }
       }
     };
     load();
-  }, [selectedDate, isToday]);
+  }, [selectedDate, isToday, isImpersonating, impersonateUserId]);
 
   // Load persistent data (once)
   useEffect(() => {
     const load = async () => {
-      const p = await getProfile();
-      setProfile(p);
-      setGoalsState(await getGoals());
-      setPermNotesState(await getPermNotes());
-      setAccountsState(await getAccounts());
-      setQuickNotesState(await getQuickNotes());
-      setHabitDefs(await getHabitDefinitions());
-      setNamazTimes(await getNamazTimes());
-      setExtraSettings(await getExtraSettings());
-      setMonthlyExpense(await getMonthlyExpenses());
+      if (isImpersonating) {
+        const p = await getProfileForUser(impersonateUserId);
+        setProfile(p);
+        setGoalsState(await getGoalsForUser(impersonateUserId));
+        setPermNotesState(await getPermNotesForUser(impersonateUserId));
+        setAccountsState(await getAccountsForUser(impersonateUserId));
+        setQuickNotesState(await getQuickNotesForUser(impersonateUserId));
+        setHabitDefs(await getHabitDefinitionsForUser(impersonateUserId));
+        setNamazTimes(await getNamazTimesForUser(impersonateUserId));
+        setExtraSettings(await getExtraSettingsForUser(impersonateUserId));
+        setMonthlyExpense(await getMonthlyExpensesForUser(impersonateUserId));
+      } else {
+        const p = await getProfile();
+        setProfile(p);
+        setGoalsState(await getGoals());
+        setPermNotesState(await getPermNotes());
+        setAccountsState(await getAccounts());
+        setQuickNotesState(await getQuickNotes());
+        setHabitDefs(await getHabitDefinitions());
+        setNamazTimes(await getNamazTimes());
+        setExtraSettings(await getExtraSettings());
+        setMonthlyExpense(await getMonthlyExpenses());
+      }
       setLoading(false);
     };
     load();
-  }, []);
+  }, [isImpersonating, impersonateUserId]);
 
   // Refresh monthly expense when date/expenses change
   useEffect(() => {
