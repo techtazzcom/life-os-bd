@@ -42,6 +42,10 @@ const AdminPage = () => {
   const [notifMessage, setNotifMessage] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [appealResponse, setAppealResponse] = useState("");
+  const [spamWords, setSpamWords] = useState<any[]>([]);
+  const [newSpamWord, setNewSpamWord] = useState("");
+  const [spamViolations, setSpamViolations] = useState<any[]>([]);
+  const [spamBans, setSpamBans] = useState<any[]>([]);
 
   useEffect(() => {
     const check = async () => {
