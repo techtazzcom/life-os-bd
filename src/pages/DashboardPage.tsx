@@ -20,6 +20,7 @@ import PermNoteCard from "@/components/dashboard/PermNoteCard";
 import AccountCard from "@/components/dashboard/AccountCard";
 import AIAssistant from "@/components/dashboard/AIAssistant";
 import MedicineCard from "@/components/dashboard/MedicineCard";
+import WeeklyAnalytics from "@/components/dashboard/WeeklyAnalytics";
 import SettingsModal from "@/components/dashboard/SettingsModal";
 import ProfileModal from "@/components/dashboard/ProfileModal";
 import NoDataDialog from "@/components/dashboard/NoDataDialog";
