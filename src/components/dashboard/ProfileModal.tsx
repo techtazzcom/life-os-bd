@@ -72,7 +72,7 @@ const ProfileModal = ({ user, onClose, onLogout }: Props) => {
     onClose();
   };
 
-  const Field = ({ label, name, type = "text", placeholder = "" }: { label: string; name: string; type?: string; placeholder?: string }) => (
+  const renderField = (label: string, name: string, type = "text", placeholder = "") => (
     <div>
       <label className="text-xs font-bold text-muted-foreground ml-1">{label}</label>
       <input type={type} name={name} value={(form as any)[name] || ''} onChange={handleChange} placeholder={placeholder} className="w-full p-3 bg-secondary border border-border rounded-2xl outline-none text-foreground focus:border-primary transition" />
