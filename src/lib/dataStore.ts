@@ -14,6 +14,12 @@ export interface UserProfile {
   blood_group?: string;
   institution?: string;
   hobby?: string;
+  intro?: string;
+  work?: string;
+  website?: string;
+  social_link?: string;
+  hide_email?: boolean;
+  hide_mobile?: boolean;
 }
 
 export async function signUp(email: string, password: string, name: string) {
