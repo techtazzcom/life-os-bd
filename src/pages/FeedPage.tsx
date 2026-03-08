@@ -398,8 +398,10 @@ const FeedPage = () => {
   };
 
   // Delete post
+  const [deletePostId, setDeletePostId] = useState<string | null>(null);
   const deletePost = async (postId: string) => {
     await supabase.from("posts").delete().eq("id", postId);
+    setDeletePostId(null);
   };
 
   const displayPosts = posts;
