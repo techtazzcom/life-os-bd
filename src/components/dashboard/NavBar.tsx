@@ -95,6 +95,15 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
             📅
           </button>
 
+          {/* Feed button */}
+          <button
+            onClick={() => navigate('/feed')}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm"
+            title="নিউজফিড"
+          >
+            📰
+          </button>
+
           {/* Chat button */}
           <button
             onClick={() => navigate('/chat')}
