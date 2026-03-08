@@ -3,8 +3,8 @@ import { getNamazTimes, saveNamazTimes, getExtraSettings, saveExtraSettings, typ
 import { getSoundSettings, saveSoundSettings, playNotificationSound, type SoundSettings } from "@/lib/soundManager";
 
 interface Props {
-  habits: Habit[];
-  onHabitsChange: (habits: Habit[]) => void;
+  habitDefs: Habit[];
+  onHabitDefsChange: (habits: Habit[]) => void;
   onClose: () => void;
 }
 
@@ -16,7 +16,7 @@ const soundFeatures = [
   { key: 'water' as const, label: '💧 পানি পান', desc: 'প্রতি ঘণ্টায় পানি পানের রিমাইন্ডার' },
 ];
 
-const SettingsModal = ({ habits, onHabitsChange, onClose }: Props) => {
+const SettingsModal = ({ habitDefs, onHabitDefsChange, onClose }: Props) => {
   const [namazTimes, setNamazTimes] = useState<NamazTimes>({ fajr: "05:30", dhuhr: "13:30", asr: "16:45", maghrib: "18:20", isha: "20:00" });
   const [settings, setSettings] = useState<ExtraSettings>({ dailyLimit: 500, monthlyLimit: 15000, sleepTime: "22:00" });
   const [soundSettings, setSoundSettings] = useState<SoundSettings>(getSoundSettings());
@@ -29,14 +29,13 @@ const SettingsModal = ({ habits, onHabitsChange, onClose }: Props) => {
 
   const addHabit = () => {
     if (!newHabit.trim()) return;
-    onHabitsChange([...habits, { id: Date.now(), title: newHabit, checked: false }]);
+    onHabitDefsChange([...habitDefs, { id: Date.now(), title: newHabit, checked: false }]);
     setNewHabit("");
   };
 
   const toggleSound = (key: keyof SoundSettings) => {
     const updated = { ...soundSettings, [key]: !soundSettings[key] };
     setSoundSettings(updated);
-    // Play preview sound when enabling
     if (updated[key]) {
       playNotificationSound('gentle');
     }
@@ -109,10 +108,10 @@ const SettingsModal = ({ habits, onHabitsChange, onClose }: Props) => {
               <button onClick={addHabit} className="bg-life-orange text-primary-foreground px-6 rounded-xl font-bold hover:opacity-90 transition">যোগ</button>
             </div>
             <div className="space-y-2 max-h-40 overflow-y-auto no-scrollbar">
-              {habits.map((h, i) => (
+              {habitDefs.map((h, i) => (
                 <div key={h.id} className="flex items-center justify-between bg-secondary p-2 rounded-lg">
                   <span className="text-sm font-bold text-foreground">{h.title}</span>
-                  <button onClick={() => onHabitsChange(habits.filter((_, idx) => idx !== i))} className="text-destructive/40 hover:text-destructive transition">🗑️</button>
+                  <button onClick={() => onHabitDefsChange(habitDefs.filter((_, idx) => idx !== i))} className="text-destructive/40 hover:text-destructive transition">🗑️</button>
                 </div>
               ))}
             </div>

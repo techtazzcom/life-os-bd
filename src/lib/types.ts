@@ -59,16 +59,17 @@ export interface DayData {
   water: number;
   tasks: Task[];
   expenses: Expense[];
-  accounts: Record<string, { trans: Transaction[] }>;
   habits: Habit[];
   notebooks: Notebook[];
   activeNoteId: number;
   namaz: Record<string, boolean>;
-  quickNotesArray: string[];
   sleepStart: string;
   sleepEnd: string;
   sleepHours: number;
   medicineDoses?: MedicineDose[];
+  // Legacy fields kept for backward compat when loading old data
+  accounts?: Record<string, { trans: Transaction[] }>;
+  quickNotesArray?: string[];
 }
 
 export interface ExtraSettings {

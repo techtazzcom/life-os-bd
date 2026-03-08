@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { signOut, getProfile, loadDayData, saveDayData, getGoals, saveGoals, getPermNotes, savePermNotes, getNamazTimes, getExtraSettings, saveExtraSettings, getTodayStr, type DayData, type Goal, type PermNote, type UserProfile, type NamazTimes, type ExtraSettings } from "@/lib/dataStore";
-import type { Medicine } from "@/lib/types";
+import { signOut, getProfile, loadDayData, saveDayData, getGoals, saveGoals, getPermNotes, savePermNotes, getNamazTimes, getExtraSettings, saveExtraSettings, getAccounts, saveAccounts, getQuickNotes, saveQuickNotes, getHabitDefinitions, saveHabitDefinitions, getMonthlyExpenses, getTodayStr, type DayData, type Goal, type PermNote, type UserProfile, type NamazTimes, type ExtraSettings } from "@/lib/dataStore";
+import type { Medicine, Habit, Transaction } from "@/lib/types";
 import NavBar from "@/components/dashboard/NavBar";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import SummaryCards from "@/components/dashboard/SummaryCards";
@@ -30,8 +30,8 @@ import NewDayDialog from "@/components/dashboard/NewDayDialog";
 
 const defaultDayData: DayData = {
   mood: '', water: 0, tasks: [], expenses: [],
-  accounts: {}, habits: [], notebooks: [{ id: 1, title: 'নোট ১', content: '' }],
-  activeNoteId: 1, namaz: {}, quickNotesArray: [''],
+  habits: [], notebooks: [{ id: 1, title: 'নোট ১', content: '' }],
+  activeNoteId: 1, namaz: {},
   sleepStart: '', sleepEnd: '', sleepHours: 0,
 };
 
@@ -42,6 +42,10 @@ const DashboardPage = () => {
   const [data, setData] = useState<DayData>(defaultDayData);
   const [goals, setGoalsState] = useState<Goal[]>([]);
   const [permNotes, setPermNotesState] = useState<PermNote[]>([]);
+  const [accounts, setAccountsState] = useState<Record<string, { trans: Transaction[] }>>({});
+  const [quickNotes, setQuickNotesState] = useState<string[]>(['']);
+  const [habitDefs, setHabitDefs] = useState<Habit[]>([]);
+  const [monthlyExpense, setMonthlyExpense] = useState(0);
   const [namazTimes, setNamazTimes] = useState<NamazTimes>({ fajr: "05:30", dhuhr: "13:30", asr: "16:45", maghrib: "18:20", isha: "20:00" });
   const [extraSettings, setExtraSettings] = useState<ExtraSettings>({ dailyLimit: 500, monthlyLimit: 15000, sleepTime: "22:00" });
   const [showSettings, setShowSettings] = useState(false);
@@ -51,6 +55,7 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   const isToday = selectedDate === getTodayStr();
+  const prevDateRef = useRef(getTodayStr());
 
   // Auto-switch to new day at midnight with greeting
   useEffect(() => {
@@ -66,25 +71,50 @@ const DashboardPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const prevDateRef = useRef(getTodayStr());
-
+  // Load date-specific data
   useEffect(() => {
     const load = async () => {
-      const p = await getProfile();
-      setProfile(p);
       const saved = await loadDayData(selectedDate);
       if (!saved && selectedDate !== getTodayStr()) {
         setShowNoData(true);
       }
-      setData(saved || defaultDayData);
+      
+      // For a new day, initialize habits from definitions (unchecked)
+      if (!saved && isToday) {
+        const defs = await getHabitDefinitions();
+        const freshHabits = defs.map(h => ({ ...h, checked: false }));
+        setData({ ...defaultDayData, habits: freshHabits });
+      } else if (saved) {
+        setData(saved);
+      } else {
+        setData(defaultDayData);
+      }
+    };
+    load();
+  }, [selectedDate, isToday]);
+
+  // Load persistent data (once)
+  useEffect(() => {
+    const load = async () => {
+      const p = await getProfile();
+      setProfile(p);
       setGoalsState(await getGoals());
       setPermNotesState(await getPermNotes());
+      setAccountsState(await getAccounts());
+      setQuickNotesState(await getQuickNotes());
+      setHabitDefs(await getHabitDefinitions());
       setNamazTimes(await getNamazTimes());
       setExtraSettings(await getExtraSettings());
+      setMonthlyExpense(await getMonthlyExpenses());
       setLoading(false);
     };
     load();
-  }, [selectedDate]);
+  }, []);
+
+  // Refresh monthly expense when date/expenses change
+  useEffect(() => {
+    getMonthlyExpenses().then(setMonthlyExpense);
+  }, [data.expenses]);
 
   const updateData = useCallback((partial: Partial<DayData>) => {
     setData(prev => {
@@ -103,6 +133,25 @@ const DashboardPage = () => {
     setPermNotesState(notes);
     await savePermNotes(notes);
   }, []);
+
+  const updateAccounts = useCallback(async (accs: Record<string, { trans: Transaction[] }>) => {
+    setAccountsState(accs);
+    await saveAccounts(accs);
+  }, []);
+
+  const updateQuickNotes = useCallback(async (notes: string[]) => {
+    setQuickNotesState(notes);
+    await saveQuickNotes(notes);
+  }, []);
+
+  const handleHabitDefChange = useCallback(async (habits: Habit[]) => {
+    setHabitDefs(habits);
+    await saveHabitDefinitions(habits);
+    // Also update current day's habits to reflect new definitions
+    const currentCheckedMap = new Map(data.habits.map(h => [h.id, h.checked]));
+    const merged = habits.map(h => ({ ...h, checked: currentCheckedMap.get(h.id) || false }));
+    updateData({ habits: merged });
+  }, [data.habits, updateData]);
 
   const handleLogout = async () => {
     await signOut();
@@ -125,7 +174,7 @@ const DashboardPage = () => {
       <NavBar userName={profile?.name || 'User'} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={() => setShowSettings(true)} onProfile={() => setShowProfile(true)} notificationSlot={<NotificationBell data={data} namazTimes={namazTimes} extraSettings={extraSettings} />} />
       <main className="max-w-6xl mx-auto p-3 md:p-8 space-y-4 md:space-y-6">
         <AIAssistant data={data} goals={goals} />
-        <SummaryCards data={data} accounts={data.accounts} />
+        <SummaryCards data={data} accounts={accounts} monthlyExpense={monthlyExpense} extraSettings={extraSettings} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           <MoodTracker mood={data.mood} onMoodChange={m => updateData({ mood: m })} />
           <WaterTracker water={data.water} onWaterChange={w => updateData({ water: w })} />
@@ -135,7 +184,7 @@ const DashboardPage = () => {
           <div className="md:col-span-8 space-y-4 md:space-y-6">
             <TaskCard tasks={data.tasks} onTasksChange={tasks => updateData({ tasks })} />
             <GoalCard goals={goals} onGoalsChange={updateGoals} />
-            <AccountCard accounts={data.accounts} onAccountsChange={accounts => updateData({ accounts })} />
+            <AccountCard accounts={accounts} onAccountsChange={updateAccounts} />
             <PermNoteCard notes={permNotes} onNotesChange={updatePermNotes} />
             <DiaryCard notebooks={data.notebooks} activeNoteId={data.activeNoteId} onUpdate={(notebooks, activeNoteId) => updateData({ notebooks, activeNoteId })} />
             <DailySummary data={data} goals={goals} namazTimes={namazTimes} extraSettings={extraSettings} />
@@ -155,12 +204,12 @@ const DashboardPage = () => {
             />
             <ExpenseCard expenses={data.expenses} onExpensesChange={expenses => updateData({ expenses })} />
             <HabitCard habits={data.habits} onHabitsChange={habits => updateData({ habits })} />
-            <QuickNoteCard notes={data.quickNotesArray} onNotesChange={quickNotesArray => updateData({ quickNotesArray })} />
+            <QuickNoteCard notes={quickNotes} onNotesChange={updateQuickNotes} />
             <SleepTracker sleepStart={data.sleepStart} sleepEnd={data.sleepEnd} sleepHours={data.sleepHours} onUpdate={(sleepStart, sleepEnd, sleepHours) => updateData({ sleepStart, sleepEnd, sleepHours })} />
           </div>
         </div>
       </main>
-      {showSettings && <SettingsModal habits={data.habits} onHabitsChange={habits => updateData({ habits })} onClose={() => setShowSettings(false)} />}
+      {showSettings && <SettingsModal habitDefs={habitDefs} onHabitDefsChange={handleHabitDefChange} onClose={() => setShowSettings(false)} />}
       {showProfile && profile && <ProfileModal user={profile} onClose={() => { setShowProfile(false); getProfile().then(setProfile); }} onLogout={handleLogout} />}
       <NoDataDialog open={showNoData} onOpenChange={setShowNoData} date={selectedDate} />
       <NewDayDialog open={showNewDay} onClose={() => setShowNewDay(false)} userName={profile?.name || 'User'} />
