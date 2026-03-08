@@ -204,7 +204,6 @@ const ChatPage = () => {
               </button>
             </div>
           )}
-          </h1>
         </div>
       </nav>
 
