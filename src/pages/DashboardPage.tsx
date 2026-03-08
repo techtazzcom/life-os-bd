@@ -119,6 +119,7 @@ const DashboardPage = () => {
             <AccountCard accounts={data.accounts} onAccountsChange={accounts => updateData({ accounts })} />
             <PermNoteCard notes={permNotes} onNotesChange={updatePermNotes} />
             <DiaryCard notebooks={data.notebooks} activeNoteId={data.activeNoteId} onUpdate={(notebooks, activeNoteId) => updateData({ notebooks, activeNoteId })} />
+            <WeeklyAnalytics />
           </div>
           <div className="md:col-span-4 space-y-4 md:space-y-6">
             <NamazTracker namaz={data.namaz} onNamazChange={namaz => updateData({ namaz })} />
