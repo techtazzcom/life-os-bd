@@ -105,12 +105,16 @@ const FeedPage = () => {
   const replyInputRef = useRef<HTMLInputElement>(null);
   const viewTimers = useRef<Record<string, number>>({});
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const [userStatus, setUserStatus] = useState<{ status: string; suspend_reason: string | null }>({ status: "active", suspend_reason: null });
+  const [appealMessage, setAppealMessage] = useState("");
+  const [appealSent, setAppealSent] = useState(false);
 
   // Init
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setCurrentUserId(user.id);
     });
+    getMyStatus().then(setUserStatus);
   }, []);
 
   // Load profiles
