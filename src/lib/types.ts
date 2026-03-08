@@ -41,6 +41,19 @@ export interface Habit {
   checked: boolean;
 }
 
+export interface Medicine {
+  id: number;
+  name: string;
+  dose: string;
+  times: string[]; // e.g. ["08:00", "20:00"]
+}
+
+export interface MedicineDose {
+  medId: number;
+  time: string;
+  taken: boolean;
+}
+
 export interface DayData {
   mood: string;
   water: number;
@@ -55,12 +68,14 @@ export interface DayData {
   sleepStart: string;
   sleepEnd: string;
   sleepHours: number;
+  medicineDoses?: MedicineDose[];
 }
 
 export interface ExtraSettings {
   dailyLimit: number;
   monthlyLimit: number;
   sleepTime: string;
+  medicines?: Medicine[];
 }
 
 export interface NamazTimes {
