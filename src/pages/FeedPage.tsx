@@ -843,7 +843,8 @@ const FeedPage = () => {
                       </div>
                     )}
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         // On touch devices, toggle the picker instead of immediately reacting
                         if ('ontouchstart' in window) {
                           setShowReactionPicker(prev => prev === post.id ? null : post.id);
