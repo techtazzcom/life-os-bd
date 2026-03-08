@@ -13,6 +13,7 @@ interface Props {
 }
 
 const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, onProfile, notificationSlot }: Props) => {
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingDate, setPendingDate] = useState(selectedDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
