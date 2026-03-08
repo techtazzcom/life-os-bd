@@ -196,18 +196,28 @@ const ChatPage = () => {
           <div className="px-5 pt-5 pb-3">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-[26px] font-black text-foreground tracking-tight">চ্যাট</h1>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => navigate("/dashboard")}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition-colors text-sm text-foreground"
-                  title="ড্যাশবোর্ড"
-                >
-                  🏠
-                </button>
-                <button className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition-colors text-sm">
-                  ✏️
-                </button>
-              </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => navigate("/dashboard")}
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition-colors text-sm text-foreground"
+                    title="ড্যাশবোর্ড"
+                  >
+                    🏠
+                  </button>
+                  <button
+                    onClick={() => navigate("/feed")}
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition-colors text-sm text-foreground"
+                    title="নিউজফিড"
+                  >
+                    📰
+                  </button>
+                  <button onClick={() => setShowCreateGroup(true)} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition-colors text-sm" title="গ্রুপ তৈরি">
+                    👥
+                  </button>
+                  <button className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition-colors text-sm">
+                    ✏️
+                  </button>
+                </div>
             </div>
             {/* Search */}
             <div className="relative">
