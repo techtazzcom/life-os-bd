@@ -575,7 +575,11 @@ const ChatPage = () => {
                 <button onClick={() => navigate("/dashboard")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition text-base">←</button>
                 <h1 className="text-2xl font-black text-foreground">চ্যাট</h1>
               </div>
-              <button className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition text-base">✏️</button>
+              <div className="flex items-center gap-1.5">
+                <button onClick={() => navigate("/feed")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition text-base" title="নিউজফিড">📰</button>
+                <button onClick={() => setShowCreateGroup(true)} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition text-base" title="গ্রুপ তৈরি">👥</button>
+                <button className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-accent transition text-base">✏️</button>
+              </div>
             </div>
             <div className="relative">
               <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
