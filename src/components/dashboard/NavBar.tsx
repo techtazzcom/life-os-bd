@@ -48,6 +48,9 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  // Check admin status
+  useEffect(() => { isAdmin().then(setIsAdminUser); }, []);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
