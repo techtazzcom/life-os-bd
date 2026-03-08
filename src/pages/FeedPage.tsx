@@ -778,6 +778,8 @@ const FeedPage = () => {
             );
           })}
         </div>
+        </>
+        )}
       </div>
       <DeleteConfirmDialog
         open={deletePostId !== null}
