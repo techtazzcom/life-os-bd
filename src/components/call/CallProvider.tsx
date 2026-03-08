@@ -30,7 +30,7 @@ const ICE_SERVERS = [
   { urls: "stun:stun1.l.google.com:19302" },
 ];
 
-const RINGTONE_FREQ = [440, 554, 659];
+
 
 export const CallProvider = ({ children }: { children: ReactNode }) => {
   const [callState, setCallState] = useState<CallState>({
@@ -46,6 +46,8 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ringtoneRef = useRef<AudioContext | null>(null);
   const ringtoneOscRef = useRef<OscillatorNode[]>([]);
+  const ringtoneTimerRef = useRef<number | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const callTypeRef = useRef<"audio" | "video">("audio");
 
@@ -80,21 +82,54 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     try {
       const ctx = new AudioContext();
       ringtoneRef.current = ctx;
-      const gainNode = ctx.createGain();
-      gainNode.gain.value = 0.1;
-      gainNode.connect(ctx.destination);
-      RINGTONE_FREQ.forEach(freq => {
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        osc.connect(gainNode);
-        osc.start();
-        ringtoneOscRef.current.push(osc);
-      });
+
+      const masterGain = ctx.createGain();
+      masterGain.gain.value = 0.18;
+      masterGain.connect(ctx.destination);
+
+      // Pleasant repeating ringtone pattern
+      const playRingCycle = () => {
+        if (!ringtoneRef.current || ringtoneRef.current.state === "closed") return;
+        const now = ctx.currentTime;
+
+        // Melodic pattern: C5 → E5 → G5 → E5 (arpeggio)
+        const notes = [
+          { freq: 523.25, start: 0, dur: 0.15 },
+          { freq: 659.25, start: 0.18, dur: 0.15 },
+          { freq: 783.99, start: 0.36, dur: 0.2 },
+          { freq: 659.25, start: 0.58, dur: 0.15 },
+          // Second phrase - higher
+          { freq: 783.99, start: 0.9, dur: 0.15 },
+          { freq: 987.77, start: 1.08, dur: 0.15 },
+          { freq: 1046.5, start: 1.26, dur: 0.25 },
+        ];
+
+        notes.forEach(({ freq, start, dur }) => {
+          const osc = ctx.createOscillator();
+          const noteGain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + start);
+          noteGain.gain.setValueAtTime(0, now + start);
+          noteGain.gain.linearRampToValueAtTime(0.3, now + start + 0.03);
+          noteGain.gain.setValueAtTime(0.3, now + start + dur * 0.6);
+          noteGain.gain.exponentialRampToValueAtTime(0.001, now + start + dur);
+          osc.connect(noteGain);
+          noteGain.connect(masterGain);
+          osc.start(now + start);
+          osc.stop(now + start + dur);
+          ringtoneOscRef.current.push(osc);
+        });
+
+        // Repeat every 2.5 seconds
+        ringtoneTimerRef.current = window.setTimeout(playRingCycle, 2500);
+      };
+
+      playRingCycle();
     } catch {}
   }, []);
 
   const stopRingtone = useCallback(() => {
+    if (ringtoneTimerRef.current) { clearTimeout(ringtoneTimerRef.current); ringtoneTimerRef.current = null; }
     ringtoneOscRef.current.forEach(o => { try { o.stop(); } catch {} });
     ringtoneOscRef.current = [];
     if (ringtoneRef.current) { try { ringtoneRef.current.close(); } catch {} ringtoneRef.current = null; }
@@ -123,6 +158,11 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
       e.streams[0].getTracks().forEach(track => {
         remoteStream.addTrack(track);
       });
+      // Attach remote stream to audio element for reliable playback
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream;
+        remoteAudioRef.current.play().catch(() => {});
+      }
       // Force re-render to trigger callback refs
       setCallState(s => ({ ...s }));
     };
@@ -439,12 +479,19 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             </div>
           )}
 
-          {/* Always-mounted hidden audio/video elements for stream playback */}
-          {callState.callType === "audio" && (
-            <>
-              <audio ref={(el) => { if (el && remoteStreamRef.current) { el.srcObject = remoteStreamRef.current; el.play().catch(() => {}); } }} autoPlay playsInline className="hidden" />
-            </>
-          )}
+          {/* Always-mounted hidden audio element for remote stream playback */}
+          <audio
+            ref={(el) => {
+              remoteAudioRef.current = el;
+              if (el && remoteStreamRef.current) {
+                el.srcObject = remoteStreamRef.current;
+                el.play().catch(() => {});
+              }
+            }}
+            autoPlay
+            playsInline
+            className="hidden"
+          />
 
           {/* Controls */}
           <div className="bg-black/90 p-6 pb-8">
