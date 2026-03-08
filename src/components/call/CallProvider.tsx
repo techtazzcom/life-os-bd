@@ -158,6 +158,11 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
       e.streams[0].getTracks().forEach(track => {
         remoteStream.addTrack(track);
       });
+      // Attach remote stream to audio element for reliable playback
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream;
+        remoteAudioRef.current.play().catch(() => {});
+      }
       // Force re-render to trigger callback refs
       setCallState(s => ({ ...s }));
     };
