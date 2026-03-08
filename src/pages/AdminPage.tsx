@@ -272,6 +272,7 @@ const AdminPage = () => {
           {[
             { key: "dashboard", icon: Activity, label: "ড্যাশবোর্ড" },
             { key: "users", icon: Users, label: "ইউজার" },
+            { key: "reports", icon: Flag, label: `রিপোর্ট${reports.filter(r => r.status === 'pending').length ? ` (${reports.filter(r => r.status === 'pending').length})` : ""}` },
             { key: "spam", icon: AlertTriangle, label: `স্প্যাম${spamBans.filter(b => b.violation_count > 0).length ? ` (${spamBans.filter(b => b.violation_count > 0).length})` : ""}` },
             { key: "appeals", icon: FileText, label: `আবেদন${pendingAppeals.length ? ` (${pendingAppeals.length})` : ""}` },
             { key: "logs", icon: Clock, label: "লগ" },
