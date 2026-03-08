@@ -194,3 +194,69 @@ export function getTodayStr(): string {
   const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+// --- Impersonation helpers (read-only, for admin) ---
+export async function loadDayDataForUser(userId: string, date: string): Promise<DayData | null> {
+  const { data } = await supabase.from('user_data').select('data_content').eq('user_id', userId).eq('date_key', date).single();
+  return data ? (data.data_content as unknown as DayData) : null;
+}
+
+export async function getProfileForUser(userId: string): Promise<UserProfile | null> {
+  const { data } = await supabase.from('profiles').select('*').eq('user_id', userId).single();
+  return data ? { name: data.name, email: data.email, mobile: data.mobile || '', dob: data.dob || '', address: data.address || '', blood_group: data.blood_group || '', institution: data.institution || '', hobby: data.hobby || '', intro: (data as any).intro || '', work: (data as any).work || '', website: (data as any).website || '', social_link: (data as any).social_link || '', hide_email: !!(data as any).hide_email, hide_mobile: !!(data as any).hide_mobile, avatar_url: (data as any).avatar_url || '' } : null;
+}
+
+async function getSettingsForUser(userId: string) {
+  const { data } = await supabase.from('user_settings').select('*').eq('user_id', userId).single();
+  return data;
+}
+
+export async function getGoalsForUser(userId: string): Promise<Goal[]> {
+  const s = await getSettingsForUser(userId);
+  return s ? (s.goals as unknown as Goal[]) : [];
+}
+
+export async function getPermNotesForUser(userId: string): Promise<PermNote[]> {
+  const s = await getSettingsForUser(userId);
+  return s ? (s.perm_notes as unknown as PermNote[]) : [];
+}
+
+export async function getNamazTimesForUser(userId: string): Promise<NamazTimes> {
+  const s = await getSettingsForUser(userId);
+  return s ? (s.namaz_times as unknown as NamazTimes) : { fajr: "05:30", dhuhr: "13:30", asr: "16:45", maghrib: "18:20", isha: "20:00" };
+}
+
+export async function getExtraSettingsForUser(userId: string): Promise<ExtraSettings> {
+  const s = await getSettingsForUser(userId);
+  return s ? (s.extra_settings as unknown as ExtraSettings) : { dailyLimit: 500, monthlyLimit: 15000, sleepTime: "22:00" };
+}
+
+export async function getAccountsForUser(userId: string): Promise<Record<string, { trans: Transaction[] }>> {
+  const s = await getSettingsForUser(userId);
+  return s ? ((s as any).accounts as Record<string, { trans: Transaction[] }>) || {} : {};
+}
+
+export async function getQuickNotesForUser(userId: string): Promise<string[]> {
+  const s = await getSettingsForUser(userId);
+  return s ? ((s as any).quick_notes as string[]) || [''] : [''];
+}
+
+export async function getHabitDefinitionsForUser(userId: string): Promise<Habit[]> {
+  const s = await getSettingsForUser(userId);
+  return s ? ((s as any).habit_definitions as Habit[]) || [] : [];
+}
+
+export async function getMonthlyExpensesForUser(userId: string): Promise<number> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const startDate = `${year}-${month}-01`;
+  const endDate = `${year}-${month}-31`;
+  const { data } = await supabase.from('user_data').select('data_content').eq('user_id', userId).gte('date_key', startDate).lte('date_key', endDate);
+  if (!data) return 0;
+  return data.reduce((total, row) => {
+    const dayData = row.data_content as unknown as DayData;
+    const dayExpenses = dayData?.expenses || [];
+    return total + dayExpenses.reduce((s, e) => s + (e.amt || 0), 0);
+  }, 0);
+}

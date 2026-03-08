@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { signOut, getProfile, loadDayData, saveDayData, getGoals, saveGoals, getPermNotes, savePermNotes, getNamazTimes, getExtraSettings, saveExtraSettings, getAccounts, saveAccounts, getQuickNotes, saveQuickNotes, getHabitDefinitions, saveHabitDefinitions, getMonthlyExpenses, getTodayStr, type DayData, type Goal, type PermNote, type UserProfile, type NamazTimes, type ExtraSettings } from "@/lib/dataStore";
+import { signOut, getProfile, loadDayData, saveDayData, getGoals, saveGoals, getPermNotes, savePermNotes, getNamazTimes, getExtraSettings, saveExtraSettings, getAccounts, saveAccounts, getQuickNotes, saveQuickNotes, getHabitDefinitions, saveHabitDefinitions, getMonthlyExpenses, getTodayStr, getProfileForUser, loadDayDataForUser, getGoalsForUser, getPermNotesForUser, getNamazTimesForUser, getExtraSettingsForUser, getAccountsForUser, getQuickNotesForUser, getHabitDefinitionsForUser, getMonthlyExpensesForUser, type DayData, type Goal, type PermNote, type UserProfile, type NamazTimes, type ExtraSettings } from "@/lib/dataStore";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { Medicine, Habit, Transaction } from "@/lib/types";
 import NavBar from "@/components/dashboard/NavBar";
@@ -66,11 +66,17 @@ const DashboardPage = () => {
   const [showNewDay, setShowNewDay] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Impersonation
+  const impersonateUserId = localStorage.getItem("impersonate_user_id");
+  const impersonateUserName = localStorage.getItem("impersonate_user_name");
+  const isImpersonating = !!impersonateUserId;
+
   const isToday = selectedDate === getTodayStr();
   const prevDateRef = useRef(getTodayStr());
 
   // Auto-switch to new day at midnight with greeting
   useEffect(() => {
+    if (isImpersonating) return;
     const checkDateChange = () => {
       const today = getTodayStr();
       if (today !== prevDateRef.current) {
@@ -81,91 +87,125 @@ const DashboardPage = () => {
     };
     const interval = setInterval(checkDateChange, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isImpersonating]);
 
   // Load date-specific data
   useEffect(() => {
     const load = async () => {
-      const saved = await loadDayData(selectedDate);
-      if (!saved && selectedDate !== getTodayStr()) {
-        setShowNoData(true);
-      }
-      
-      // For a new day, initialize habits from definitions (unchecked)
-      if (!saved && isToday) {
-        const defs = await getHabitDefinitions();
-        const freshHabits = defs.map(h => ({ ...h, checked: false }));
-        setData({ ...defaultDayData, habits: freshHabits });
-      } else if (saved) {
-        setData(saved);
+      if (isImpersonating) {
+        const saved = await loadDayDataForUser(impersonateUserId, selectedDate);
+        if (!saved && selectedDate !== getTodayStr()) setShowNoData(true);
+        setData(saved || defaultDayData);
       } else {
-        setData(defaultDayData);
+        const saved = await loadDayData(selectedDate);
+        if (!saved && selectedDate !== getTodayStr()) setShowNoData(true);
+        if (!saved && isToday) {
+          const defs = await getHabitDefinitions();
+          const freshHabits = defs.map(h => ({ ...h, checked: false }));
+          setData({ ...defaultDayData, habits: freshHabits });
+        } else if (saved) {
+          setData(saved);
+        } else {
+          setData(defaultDayData);
+        }
       }
     };
     load();
-  }, [selectedDate, isToday]);
+  }, [selectedDate, isToday, isImpersonating, impersonateUserId]);
 
   // Load persistent data (once)
   useEffect(() => {
     const load = async () => {
-      const p = await getProfile();
-      setProfile(p);
-      setGoalsState(await getGoals());
-      setPermNotesState(await getPermNotes());
-      setAccountsState(await getAccounts());
-      setQuickNotesState(await getQuickNotes());
-      setHabitDefs(await getHabitDefinitions());
-      setNamazTimes(await getNamazTimes());
-      setExtraSettings(await getExtraSettings());
-      setMonthlyExpense(await getMonthlyExpenses());
+      if (isImpersonating) {
+        const p = await getProfileForUser(impersonateUserId);
+        setProfile(p);
+        setGoalsState(await getGoalsForUser(impersonateUserId));
+        setPermNotesState(await getPermNotesForUser(impersonateUserId));
+        setAccountsState(await getAccountsForUser(impersonateUserId));
+        setQuickNotesState(await getQuickNotesForUser(impersonateUserId));
+        setHabitDefs(await getHabitDefinitionsForUser(impersonateUserId));
+        setNamazTimes(await getNamazTimesForUser(impersonateUserId));
+        setExtraSettings(await getExtraSettingsForUser(impersonateUserId));
+        setMonthlyExpense(await getMonthlyExpensesForUser(impersonateUserId));
+      } else {
+        const p = await getProfile();
+        setProfile(p);
+        setGoalsState(await getGoals());
+        setPermNotesState(await getPermNotes());
+        setAccountsState(await getAccounts());
+        setQuickNotesState(await getQuickNotes());
+        setHabitDefs(await getHabitDefinitions());
+        setNamazTimes(await getNamazTimes());
+        setExtraSettings(await getExtraSettings());
+        setMonthlyExpense(await getMonthlyExpenses());
+      }
       setLoading(false);
     };
     load();
-  }, []);
+  }, [isImpersonating, impersonateUserId]);
 
   // Refresh monthly expense when date/expenses change
   useEffect(() => {
-    getMonthlyExpenses().then(setMonthlyExpense);
-  }, [data.expenses]);
+    if (isImpersonating) {
+      getMonthlyExpensesForUser(impersonateUserId).then(setMonthlyExpense);
+    } else {
+      getMonthlyExpenses().then(setMonthlyExpense);
+    }
+  }, [data.expenses, isImpersonating, impersonateUserId]);
 
   const updateData = useCallback((partial: Partial<DayData>) => {
+    if (isImpersonating) return; // Read-only in impersonation mode
     setData(prev => {
       const next = { ...prev, ...partial };
       saveDayData(selectedDate, next);
       return next;
     });
-  }, [selectedDate]);
+  }, [selectedDate, isImpersonating]);
 
   const updateGoals = useCallback(async (newGoals: Goal[]) => {
+    if (isImpersonating) return;
     setGoalsState(newGoals);
     await saveGoals(newGoals);
-  }, []);
+  }, [isImpersonating]);
 
   const updatePermNotes = useCallback(async (notes: PermNote[]) => {
+    if (isImpersonating) return;
     setPermNotesState(notes);
     await savePermNotes(notes);
-  }, []);
+  }, [isImpersonating]);
 
   const updateAccounts = useCallback(async (accs: Record<string, { trans: Transaction[] }>) => {
+    if (isImpersonating) return;
     setAccountsState(accs);
     await saveAccounts(accs);
-  }, []);
+  }, [isImpersonating]);
 
   const updateQuickNotes = useCallback(async (notes: string[]) => {
+    if (isImpersonating) return;
     setQuickNotesState(notes);
     await saveQuickNotes(notes);
-  }, []);
+  }, [isImpersonating]);
 
   const handleHabitDefChange = useCallback(async (habits: Habit[]) => {
+    if (isImpersonating) return;
     setHabitDefs(habits);
     await saveHabitDefinitions(habits);
-    // Also update current day's habits to reflect new definitions
     const currentCheckedMap = new Map(data.habits.map(h => [h.id, h.checked]));
     const merged = habits.map(h => ({ ...h, checked: currentCheckedMap.get(h.id) || false }));
     updateData({ habits: merged });
-  }, [data.habits, updateData]);
+  }, [data.habits, updateData, isImpersonating]);
+
+  const exitImpersonation = () => {
+    localStorage.removeItem("impersonate_user_id");
+    localStorage.removeItem("impersonate_user_name");
+    navigate("/admin");
+  };
 
   const handleLogout = async () => {
+    if (isImpersonating) {
+      exitImpersonation();
+      return;
+    }
     await signOut();
     navigate("/login");
   };
@@ -183,7 +223,15 @@ const DashboardPage = () => {
 
   return (
     <div className="bg-background min-h-screen pb-10">
-      <NavBar userName={profile?.name || 'User'} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={() => setShowSettings(true)} onProfile={() => setShowProfile(true)} notificationSlot={<NotificationBell data={data} namazTimes={namazTimes} extraSettings={extraSettings} />} />
+      {isImpersonating && (
+        <div className="bg-blue-600 text-white text-center py-2 px-4 text-sm font-bold flex items-center justify-center gap-3 sticky top-0 z-50">
+          <span>👁️ আপনি <strong>{impersonateUserName}</strong>-এর ড্যাশবোর্ড দেখছেন (শুধু দেখা যাবে, পরিবর্তন করা যাবে না)</span>
+          <button onClick={exitImpersonation} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition text-xs font-bold">
+            ✕ ফিরে যান
+          </button>
+        </div>
+      )}
+      <NavBar userName={isImpersonating ? (impersonateUserName || 'User') : (profile?.name || 'User')} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={isImpersonating ? undefined : () => setShowSettings(true)} onProfile={isImpersonating ? undefined : () => setShowProfile(true)} notificationSlot={isImpersonating ? null : <NotificationBell data={data} namazTimes={namazTimes} extraSettings={extraSettings} />} />
       <main className="max-w-6xl mx-auto p-3 md:p-8 space-y-4 md:space-y-6">
         <Suspense fallback={null}>
           <AdminNotifBanner />
