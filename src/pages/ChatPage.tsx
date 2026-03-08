@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import UserProfileDialog from "@/components/chat/UserProfileDialog";
 
 interface Profile {
   user_id: string;
@@ -28,6 +29,8 @@ const ChatPage = () => {
   const [showUserList, setShowUserList] = useState(true);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // Get current user
   useEffect(() => {
@@ -145,7 +148,10 @@ const ChatPage = () => {
             {selectedUser ? (
               <span className="flex items-center gap-2">
                 <button onClick={() => { setSelectedUser(null); setShowUserList(true); }} className="md:hidden text-muted-foreground text-sm">←</button>
-                {selectedUser.name}
+                <span
+                  className="hover:text-primary cursor-pointer transition"
+                  onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }}
+                >{selectedUser.name}</span>
               </span>
             ) : "চ্যাট"}
           </h1>
@@ -178,7 +184,10 @@ const ChatPage = () => {
                     {u.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="font-bold text-sm text-foreground truncate">{u.name}</p>
+                    <p
+                      className="font-bold text-sm text-foreground truncate hover:text-primary cursor-pointer transition"
+                      onClick={(e) => { e.stopPropagation(); setProfileUserId(u.user_id); setProfileOpen(true); }}
+                    >{u.name}</p>
                     <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
                   </div>
                   {unreadCounts[u.user_id] > 0 && (
@@ -253,6 +262,7 @@ const ChatPage = () => {
           )}
         </div>
       </div>
+      <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
     </div>
   );
 };
