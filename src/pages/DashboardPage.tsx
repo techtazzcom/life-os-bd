@@ -26,6 +26,7 @@ import DailySummary from "@/components/dashboard/DailySummary";
 import ProfileModal from "@/components/dashboard/ProfileModal";
 import NoDataDialog from "@/components/dashboard/NoDataDialog";
 import SoundAlertManager from "@/components/dashboard/SoundAlertManager";
+import NewDayDialog from "@/components/dashboard/NewDayDialog";
 
 const defaultDayData: DayData = {
   mood: '', water: 0, tasks: [], expenses: [],
