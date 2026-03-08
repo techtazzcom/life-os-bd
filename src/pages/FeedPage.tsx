@@ -815,7 +815,7 @@ const FeedPage = () => {
                 <div className="border-t border-border flex relative">
                   <div
                     className="flex-1 relative"
-                    onMouseEnter={() => !post.liked_by_me && setShowReactionPicker(post.id)}
+                    onMouseEnter={() => setShowReactionPicker(post.id)}
                     onMouseLeave={() => setTimeout(() => setShowReactionPicker(prev => prev === post.id ? null : prev), 500)}
                   >
                     {/* Reaction Picker */}
@@ -824,7 +824,7 @@ const FeedPage = () => {
                         {REACTIONS.map(r => (
                           <button
                             key={r.type}
-                            onClick={() => reactToPost(post, r.type)}
+                            onClick={(e) => { e.stopPropagation(); reactToPost(post, r.type); }}
                             className="text-2xl hover:scale-125 transition-transform active:scale-95 p-1"
                             title={r.label}
                           >
@@ -834,7 +834,15 @@ const FeedPage = () => {
                       </div>
                     )}
                     <button
-                      onClick={() => post.liked_by_me ? reactToPost(post, post.my_reaction!) : reactToPost(post, 'like')}
+                      onClick={() => {
+                        // On touch devices, toggle the picker instead of immediately reacting
+                        if ('ontouchstart' in window) {
+                          setShowReactionPicker(prev => prev === post.id ? null : post.id);
+                        } else {
+                          post.liked_by_me ? reactToPost(post, post.my_reaction!) : reactToPost(post, 'like');
+                        }
+                      }}
+                      onContextMenu={(e) => { e.preventDefault(); setShowReactionPicker(post.id); }}
                       className={`w-full py-2.5 text-sm font-bold flex items-center justify-center gap-1.5 transition hover:bg-secondary/50 ${
                         post.liked_by_me ? "text-primary" : "text-muted-foreground"
                       }`}
