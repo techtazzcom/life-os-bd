@@ -42,7 +42,7 @@ export async function getProfile(): Promise<UserProfile | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data } = await supabase.from('profiles').select('*').eq('user_id', user.id).single();
-  return data ? { name: data.name, email: data.email, mobile: data.mobile || '', dob: data.dob || '', address: data.address || '', blood_group: data.blood_group || '', institution: data.institution || '', hobby: data.hobby || '' } : null;
+  return data ? { name: data.name, email: data.email, mobile: data.mobile || '', dob: data.dob || '', address: data.address || '', blood_group: data.blood_group || '', institution: data.institution || '', hobby: data.hobby || '', intro: (data as any).intro || '', work: (data as any).work || '', website: (data as any).website || '', social_link: (data as any).social_link || '', hide_email: !!(data as any).hide_email, hide_mobile: !!(data as any).hide_mobile } : null;
 }
 
 export async function updateProfile(profile: UserProfile) {
