@@ -57,7 +57,24 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const App = () => (
+// Load dynamic site settings (favicon)
+function useSiteSettings() {
+  useEffect(() => {
+    supabase.from("site_settings" as any).select("*").then(({ data }) => {
+      if (!data) return;
+      (data as any[]).forEach((s: any) => {
+        if (s.key === "site_favicon" && s.value) {
+          const link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+          if (link) link.href = s.value;
+        }
+      });
+    });
+  }, []);
+}
+
+const App = () => {
+  useSiteSettings();
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
