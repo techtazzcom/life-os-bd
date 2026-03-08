@@ -6,7 +6,8 @@
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#2563eb",
-  "orientation": "portrait",
+  "orientation": "any",
+  "categories": ["productivity", "lifestyle"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -20,5 +21,7 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "display_override": ["standalone", "window-controls-overlay"]
 }
