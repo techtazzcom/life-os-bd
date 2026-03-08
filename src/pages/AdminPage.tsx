@@ -52,6 +52,10 @@ const AdminPage = () => {
   const [replyingReportId, setReplyingReportId] = useState<string | null>(null);
   const [reportAdminNote, setReportAdminNote] = useState("");
   const [reportFilter, setReportFilter] = useState("");
+  const [siteLogo, setSiteLogo] = useState("");
+  const [siteFavicon, setSiteFavicon] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
 
   useEffect(() => {
     const check = async () => {
