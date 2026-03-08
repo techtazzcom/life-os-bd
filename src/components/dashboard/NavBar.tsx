@@ -13,6 +13,7 @@ interface Props {
 
 const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, onProfile, notificationSlot }: Props) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingDate, setPendingDate] = useState(selectedDate);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,17 +34,22 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
         <div className="flex items-center gap-2">
           <input
             type="date"
-            value={selectedDate}
-            onChange={(e) => onDateChange(e.target.value)}
+            value={pendingDate}
+            onChange={(e) => setPendingDate(e.target.value)}
             className="bg-card border border-border rounded-full px-3 py-1.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <button
-            onClick={() => onDateChange(format(new Date(), 'yyyy-MM-dd'))}
+            onClick={() => onDateChange(pendingDate)}
             className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition"
+          >
+            দেখুন
+          </button>
+          <button
+            onClick={() => { const today = format(new Date(), 'yyyy-MM-dd'); setPendingDate(today); onDateChange(today); }}
+            className="bg-secondary text-foreground px-3 py-1.5 rounded-full text-xs font-bold hover:bg-secondary/80 transition border border-border"
           >
             আজ
           </button>
-          {notificationSlot}
           <div className="relative" ref={menuRef}>
             <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-sm font-bold text-foreground hover:border-primary transition">
               <span className="w-7 h-7 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-black">{userName.charAt(0)}</span>
@@ -57,6 +63,7 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
               </div>
             )}
           </div>
+          {notificationSlot}
         </div>
       </div>
     </nav>
