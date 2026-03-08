@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { signIn } from "@/lib/dataStore";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const LoginPage = () => {
@@ -12,14 +13,52 @@ const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
+    const { data, error } = await signIn(email, password);
     if (error) {
+      setLoading(false);
       toast.error("ভুল ইমেইল বা পাসওয়ার্ড!");
-    } else {
-      toast.success("সফলভাবে লগইন হয়েছে!");
-      navigate("/dashboard");
+      return;
     }
+
+    // Check user status
+    const userId = data?.user?.id;
+    if (userId) {
+      const { data: profile } = await supabase.from('profiles').select('status, lock_until, suspend_reason').eq('user_id', userId).single();
+      if (profile) {
+        const status = (profile as any).status;
+        const lockUntil = (profile as any).lock_until;
+        const suspendReason = (profile as any).suspend_reason;
+
+        if (status === 'blocked') {
+          await supabase.auth.signOut();
+          setLoading(false);
+          toast.error(`আপনার অ্যাকাউন্ট ব্লক করা হয়েছে।${suspendReason ? ` কারণ: ${suspendReason}` : ''}`);
+          return;
+        }
+        if (status === 'suspended') {
+          await supabase.auth.signOut();
+          setLoading(false);
+          toast.error(`আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে।${suspendReason ? ` কারণ: ${suspendReason}` : ''}`);
+          return;
+        }
+        if (status === 'locked' && lockUntil) {
+          const lockDate = new Date(lockUntil);
+          if (lockDate > new Date()) {
+            await supabase.auth.signOut();
+            setLoading(false);
+            toast.error(`আপনার অ্যাকাউন্ট ${lockDate.toLocaleDateString('bn-BD')} পর্যন্ত লক করা আছে।${suspendReason ? ` কারণ: ${suspendReason}` : ''}`);
+            return;
+          } else {
+            // Lock expired, restore to active
+            await supabase.from('profiles').update({ status: 'active', lock_until: null, suspend_reason: null } as any).eq('user_id', userId);
+          }
+        }
+      }
+    }
+
+    setLoading(false);
+    toast.success("সফলভাবে লগইন হয়েছে!");
+    navigate("/dashboard");
   };
 
   return (

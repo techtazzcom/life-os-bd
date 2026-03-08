@@ -29,6 +29,7 @@ const DailySummary = lazy(() => import("@/components/dashboard/DailySummary"));
 const ProfileModal = lazy(() => import("@/components/dashboard/ProfileModal"));
 const NoDataDialog = lazy(() => import("@/components/dashboard/NoDataDialog"));
 const SoundAlertManager = lazy(() => import("@/components/dashboard/SoundAlertManager"));
+const AdminNotifBanner = lazy(() => import("@/components/dashboard/AdminNotifBanner"));
 
 const CardSkeleton = () => (
   <div className="bg-card border border-border rounded-2xl p-4 animate-pulse">
@@ -182,6 +183,9 @@ const DashboardPage = () => {
     <div className="bg-background min-h-screen pb-10">
       <NavBar userName={profile?.name || 'User'} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={() => setShowSettings(true)} onProfile={() => setShowProfile(true)} notificationSlot={<NotificationBell data={data} namazTimes={namazTimes} extraSettings={extraSettings} />} />
       <main className="max-w-6xl mx-auto p-3 md:p-8 space-y-4 md:space-y-6">
+        <Suspense fallback={null}>
+          <AdminNotifBanner />
+        </Suspense>
         <Suspense fallback={<CardSkeleton />}>
           <AIAssistant data={data} goals={goals} />
         </Suspense>
