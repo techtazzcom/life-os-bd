@@ -121,10 +121,10 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
                   {profile.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              {/* Online indicator */}
-              {profile.is_online ? (
-                <span className="absolute top-[88px] left-1/2 translate-x-[18px] w-4 h-4 bg-green-500 border-2 border-background rounded-full" />
-              ) : null}
+              {/* Online dot on avatar */}
+              {profile.is_online && (
+                <span className="absolute top-[88px] left-1/2 translate-x-[18px] w-4 h-4 bg-green-500 border-2 border-background rounded-full animate-pulse" />
+              )}
               <DialogHeader>
                 <DialogTitle className="text-xl font-black text-foreground flex items-center justify-center gap-2">
                   {profile.name}
