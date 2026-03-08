@@ -572,8 +572,17 @@ const FeedPage = () => {
     }
   };
 
+  // Close reaction picker & menus on outside click (mobile support)
+  useEffect(() => {
+    const handler = () => {
+      setReportMenuPostId(null);
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+
   return (
-    <div className="bg-background min-h-screen flex flex-col overflow-x-hidden">
+    <div className="bg-background min-h-screen flex flex-col overflow-x-hidden" onClick={() => { if (showReactionPicker) setShowReactionPicker(null); }}>
       {/* Header */}
       <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border p-3 shadow-sm">
         <div className="max-w-2xl mx-auto flex items-center gap-2">
@@ -722,7 +731,7 @@ const FeedPage = () => {
                   </div>
                   <div className="relative shrink-0">
                     <button
-                      onClick={() => setReportMenuPostId(reportMenuPostId === post.id ? null : post.id)}
+                      onClick={(e) => { e.stopPropagation(); setReportMenuPostId(reportMenuPostId === post.id ? null : post.id); }}
                       className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground transition text-lg"
                     >
                       ⋮
@@ -815,16 +824,16 @@ const FeedPage = () => {
                 <div className="border-t border-border flex relative">
                   <div
                     className="flex-1 relative"
-                    onMouseEnter={() => !post.liked_by_me && setShowReactionPicker(post.id)}
+                    onMouseEnter={() => setShowReactionPicker(post.id)}
                     onMouseLeave={() => setTimeout(() => setShowReactionPicker(prev => prev === post.id ? null : prev), 500)}
                   >
                     {/* Reaction Picker */}
                     {showReactionPicker === post.id && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-card border border-border rounded-2xl shadow-lg px-2 py-1.5 flex gap-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full left-0 mb-2 bg-card border border-border rounded-2xl shadow-lg px-2 py-1.5 flex gap-1 z-50 animate-in fade-in zoom-in-95 duration-150">
                         {REACTIONS.map(r => (
                           <button
                             key={r.type}
-                            onClick={() => reactToPost(post, r.type)}
+                            onClick={(e) => { e.stopPropagation(); reactToPost(post, r.type); }}
                             className="text-2xl hover:scale-125 transition-transform active:scale-95 p-1"
                             title={r.label}
                           >
@@ -834,7 +843,16 @@ const FeedPage = () => {
                       </div>
                     )}
                     <button
-                      onClick={() => post.liked_by_me ? reactToPost(post, post.my_reaction!) : reactToPost(post, 'like')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // On touch devices, toggle the picker instead of immediately reacting
+                        if ('ontouchstart' in window) {
+                          setShowReactionPicker(prev => prev === post.id ? null : post.id);
+                        } else {
+                          post.liked_by_me ? reactToPost(post, post.my_reaction!) : reactToPost(post, 'like');
+                        }
+                      }}
+                      onContextMenu={(e) => { e.preventDefault(); setShowReactionPicker(post.id); }}
                       className={`w-full py-2.5 text-sm font-bold flex items-center justify-center gap-1.5 transition hover:bg-secondary/50 ${
                         post.liked_by_me ? "text-primary" : "text-muted-foreground"
                       }`}

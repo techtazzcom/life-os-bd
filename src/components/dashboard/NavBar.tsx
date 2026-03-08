@@ -72,12 +72,21 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
         <div className="flex items-center gap-1.5 md:gap-2">
           {/* Date picker - collapsible on mobile */}
           <div className="hidden sm:flex items-center gap-1.5">
-            <input
-              type="date"
-              value={pendingDate}
-              onChange={(e) => setPendingDate(e.target.value)}
-              className="bg-card border border-border rounded-full px-3 py-1.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 w-36"
-            />
+            <div className="relative">
+              <input
+                type="date"
+                value={pendingDate}
+                onChange={(e) => setPendingDate(e.target.value)}
+                className="bg-card border border-border rounded-full px-3 py-1.5 text-sm font-bold text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 w-36 cursor-pointer"
+              />
+              <span className="absolute inset-0 flex items-center px-3 text-sm font-bold text-foreground pointer-events-none">
+                {(() => {
+                  const d = new Date(pendingDate + 'T00:00:00');
+                  if (isNaN(d.getTime())) return pendingDate;
+                  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                })()}
+              </span>
+            </div>
             <button
               onClick={() => onDateChange(pendingDate)}
               className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition"
@@ -148,12 +157,21 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
       {/* Mobile date picker dropdown */}
       {showDatePicker && (
         <div className="sm:hidden mt-3 flex items-center gap-2 animate-fade-in-up">
-          <input
-            type="date"
-            value={pendingDate}
-            onChange={(e) => setPendingDate(e.target.value)}
-            className="flex-1 bg-card border border-border rounded-xl px-3 py-2 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
+          <div className="relative flex-1">
+            <input
+              type="date"
+              value={pendingDate}
+              onChange={(e) => setPendingDate(e.target.value)}
+              className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm font-bold text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+            />
+            <span className="absolute inset-0 flex items-center px-3 text-sm font-bold text-foreground pointer-events-none">
+              {(() => {
+                const d = new Date(pendingDate + 'T00:00:00');
+                if (isNaN(d.getTime())) return pendingDate;
+                return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+              })()}
+            </span>
+          </div>
           <button
             onClick={() => { onDateChange(pendingDate); setShowDatePicker(false); }}
             className="bg-primary text-primary-foreground px-3 py-2 rounded-xl text-xs font-bold hover:opacity-90 transition"
