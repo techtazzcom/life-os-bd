@@ -240,12 +240,13 @@ const FeedPage = () => {
   const createPost = async () => {
     if (!newPostContent.trim() || !currentUserId) return;
     setPosting(true);
+    const autoCategory = detectCategory(newPostContent);
     await supabase.from("posts").insert({
       user_id: currentUserId,
       content: newPostContent.trim(),
-      category: newPostCategory,
+      category: autoCategory,
     });
-    trackInterest(newPostCategory);
+    trackInterest(autoCategory);
     setNewPostContent("");
     setPosting(false);
   };
