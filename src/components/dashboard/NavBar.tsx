@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { format } from "date-fns";
 
 interface Props {
@@ -8,9 +8,10 @@ interface Props {
   onLogout: () => void;
   onSettings: () => void;
   onProfile: () => void;
+  notificationSlot?: ReactNode;
 }
 
-const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, onProfile }: Props) => {
+const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, onProfile, notificationSlot }: Props) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +44,7 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
             আজ
           </button>
         </div>
+        {notificationSlot}
         <div className="relative" ref={menuRef}>
           <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-sm font-bold text-foreground hover:border-primary transition">
             <span className="w-7 h-7 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-black">{userName.charAt(0)}</span>

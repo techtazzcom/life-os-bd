@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { signOut, getProfile, loadDayData, saveDayData, getGoals, saveGoals, getPermNotes, savePermNotes, getTodayStr, type DayData, type Goal, type PermNote, type UserProfile } from "@/lib/dataStore";
+import { signOut, getProfile, loadDayData, saveDayData, getGoals, saveGoals, getPermNotes, savePermNotes, getNamazTimes, getExtraSettings, getTodayStr, type DayData, type Goal, type PermNote, type UserProfile, type NamazTimes, type ExtraSettings } from "@/lib/dataStore";
 import NavBar from "@/components/dashboard/NavBar";
+import NotificationBell from "@/components/dashboard/NotificationBell";
 import SummaryCards from "@/components/dashboard/SummaryCards";
 import MoodTracker from "@/components/dashboard/MoodTracker";
 import WaterTracker from "@/components/dashboard/WaterTracker";
@@ -34,6 +35,8 @@ const DashboardPage = () => {
   const [data, setData] = useState<DayData>(defaultDayData);
   const [goals, setGoalsState] = useState<Goal[]>([]);
   const [permNotes, setPermNotesState] = useState<PermNote[]>([]);
+  const [namazTimes, setNamazTimes] = useState<NamazTimes>({ fajr: "05:30", dhuhr: "13:30", asr: "16:45", maghrib: "18:20", isha: "20:00" });
+  const [extraSettings, setExtraSettings] = useState<ExtraSettings>({ dailyLimit: 500, monthlyLimit: 15000, sleepTime: "22:00" });
   const [showSettings, setShowSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -48,6 +51,8 @@ const DashboardPage = () => {
       setData(saved || defaultDayData);
       setGoalsState(await getGoals());
       setPermNotesState(await getPermNotes());
+      setNamazTimes(await getNamazTimes());
+      setExtraSettings(await getExtraSettings());
       setLoading(false);
     };
     load();
@@ -89,7 +94,7 @@ const DashboardPage = () => {
 
   return (
     <div className="bg-background min-h-screen pb-10">
-      <NavBar userName={profile?.name || 'User'} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={() => setShowSettings(true)} onProfile={() => setShowProfile(true)} />
+      <NavBar userName={profile?.name || 'User'} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={() => setShowSettings(true)} onProfile={() => setShowProfile(true)} notificationSlot={<NotificationBell data={data} namazTimes={namazTimes} extraSettings={extraSettings} />} />
       <main className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
         <AIAssistant data={data} goals={goals} />
         <SummaryCards data={data} />
