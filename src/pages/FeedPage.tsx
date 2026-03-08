@@ -399,7 +399,7 @@ const FeedPage = () => {
         </div>
 
         {/* Category Filter */}
-        <div className="px-3 mb-2 flex gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="mb-2 flex gap-1.5 overflow-x-auto no-scrollbar max-w-full">
           <button
             onClick={() => setFilterCategory(null)}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition ${
