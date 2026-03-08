@@ -69,8 +69,12 @@ const AdminPage = () => {
   const filteredUsers = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
-    (u.mobile || "").includes(search)
+    (u.mobile || "").includes(search) ||
+    u.status === search
   );
+
+  // Reset page when search changes
+  useEffect(() => { setUserPage(1); }, [search]);
 
   const showConfirm = (title: string, desc: string, onConfirm: () => void) => {
     setConfirmModal({ title, desc, onConfirm });
