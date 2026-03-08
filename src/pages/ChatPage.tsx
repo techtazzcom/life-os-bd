@@ -76,6 +76,16 @@ const ChatPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const currentUserIdRef = useRef("");
 
+  // Group chat state
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [groups, setGroups] = useState<ChatGroup[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<ChatGroup | null>(null);
+  const [groupMessages, setGroupMessages] = useState<GroupMessage[]>([]);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [chatMode, setChatMode] = useState<"dm" | "group">("dm");
+  const groupMsgEndRef = useRef<HTMLDivElement>(null);
+
   // Auth
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
