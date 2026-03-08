@@ -11,21 +11,37 @@ const ResetPasswordPage = () => {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Check for recovery token in URL hash
+    // Listen for PASSWORD_RECOVERY event from Supabase auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setReady(true);
+      } else if (event === "SIGNED_IN" && session) {
+        // User may already be signed in via recovery link
+        setReady(true);
+      }
+    });
+
+    // Also check current session/hash on mount
     const hash = window.location.hash;
     if (hash.includes("type=recovery")) {
       setReady(true);
     } else {
-      // Also check if user has an active session from the recovery link
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
           setReady(true);
         } else {
-          toast.error("অবৈধ বা মেয়াদোত্তীর্ণ রিসেট লিংক!");
-          navigate("/login");
+          // Wait a moment for auth state change before redirecting
+          setTimeout(() => {
+            if (!ready) {
+              toast.error("অবৈধ বা মেয়াদোত্তীর্ণ রিসেট লিংক!");
+              navigate("/login");
+            }
+          }, 3000);
         }
       });
     }
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
