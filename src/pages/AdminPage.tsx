@@ -803,6 +803,140 @@ const AdminPage = () => {
             </div>
           </div>
         )}
+
+        {/* Settings Tab */}
+        {tab === "settings" && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-black text-foreground flex items-center gap-2"><Settings size={20} /> সাইট সেটিংস</h3>
+            
+            {/* Site Logo */}
+            <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+              <h4 className="font-bold text-foreground mb-4 flex items-center gap-2"><Image size={18} /> সাইট লোগো</h4>
+              <div className="flex items-center gap-4">
+                {siteLogo ? (
+                  <img src={siteLogo} alt="Site Logo" className="w-20 h-20 object-contain rounded-xl border border-border bg-secondary p-1" />
+                ) : (
+                  <div className="w-20 h-20 rounded-xl border border-dashed border-border bg-secondary flex items-center justify-center text-muted-foreground">
+                    <Image size={28} />
+                  </div>
+                )}
+                <div className="flex-1 space-y-2">
+                  <p className="text-xs text-muted-foreground">PNG, JPG বা SVG ফাইল আপলোড করুন। সর্বোচ্চ 2MB।</p>
+                  <div className="flex gap-2">
+                    <label className={`px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition flex items-center gap-2 ${uploadingLogo ? "bg-secondary text-muted-foreground" : "bg-primary text-primary-foreground hover:opacity-90"}`}>
+                      <Upload size={14} /> {uploadingLogo ? "আপলোড হচ্ছে..." : "লোগো আপলোড"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingLogo}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 2 * 1024 * 1024) { toast.error("ফাইল সাইজ 2MB এর বেশি!"); return; }
+                          setUploadingLogo(true);
+                          const ext = file.name.split('.').pop();
+                          const path = `site/logo.${ext}`;
+                          const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+                          if (error) { toast.error("আপলোড ব্যর্থ!"); setUploadingLogo(false); return; }
+                          const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                          const url = urlData.publicUrl + "?t=" + Date.now();
+                          await supabase.from("site_settings" as any).update({ value: url, updated_at: new Date().toISOString() }).eq("key", "site_logo");
+                          setSiteLogo(url);
+                          setUploadingLogo(false);
+                          toast.success("লোগো আপডেট হয়েছে!");
+                        }}
+                      />
+                    </label>
+                    {siteLogo && (
+                      <button onClick={async () => {
+                        await supabase.from("site_settings" as any).update({ value: "", updated_at: new Date().toISOString() }).eq("key", "site_logo");
+                        setSiteLogo("");
+                        toast.success("লোগো সরানো হয়েছে");
+                      }} className="px-4 py-2 rounded-xl bg-destructive/10 text-destructive text-sm font-bold hover:bg-destructive/20 transition">
+                        সরান
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Site Favicon */}
+            <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+              <h4 className="font-bold text-foreground mb-4 flex items-center gap-2">⭐ সাইট ফেভিকন</h4>
+              <div className="flex items-center gap-4">
+                {siteFavicon ? (
+                  <img src={siteFavicon} alt="Favicon" className="w-16 h-16 object-contain rounded-xl border border-border bg-secondary p-1" />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl border border-dashed border-border bg-secondary flex items-center justify-center text-muted-foreground text-2xl">
+                    ⭐
+                  </div>
+                )}
+                <div className="flex-1 space-y-2">
+                  <p className="text-xs text-muted-foreground">ছোট আইকন (32x32 বা 64x64 পিক্সেল রেকমেন্ডেড)। PNG বা ICO ফরম্যাট।</p>
+                  <div className="flex gap-2">
+                    <label className={`px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition flex items-center gap-2 ${uploadingFavicon ? "bg-secondary text-muted-foreground" : "bg-primary text-primary-foreground hover:opacity-90"}`}>
+                      <Upload size={14} /> {uploadingFavicon ? "আপলোড হচ্ছে..." : "ফেভিকন আপলোড"}
+                      <input
+                        type="file"
+                        accept="image/png,image/x-icon,image/svg+xml"
+                        className="hidden"
+                        disabled={uploadingFavicon}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 1 * 1024 * 1024) { toast.error("ফাইল সাইজ 1MB এর বেশি!"); return; }
+                          setUploadingFavicon(true);
+                          const ext = file.name.split('.').pop();
+                          const path = `site/favicon.${ext}`;
+                          const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+                          if (error) { toast.error("আপলোড ব্যর্থ!"); setUploadingFavicon(false); return; }
+                          const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                          const url = urlData.publicUrl + "?t=" + Date.now();
+                          await supabase.from("site_settings" as any).update({ value: url, updated_at: new Date().toISOString() }).eq("key", "site_favicon");
+                          setSiteFavicon(url);
+                          setUploadingFavicon(false);
+                          toast.success("ফেভিকন আপডেট হয়েছে!");
+                          // Update favicon in DOM
+                          const link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+                          if (link) link.href = url;
+                        }}
+                      />
+                    </label>
+                    {siteFavicon && (
+                      <button onClick={async () => {
+                        await supabase.from("site_settings" as any).update({ value: "", updated_at: new Date().toISOString() }).eq("key", "site_favicon");
+                        setSiteFavicon("");
+                        toast.success("ফেভিকন সরানো হয়েছে");
+                      }} className="px-4 py-2 rounded-xl bg-destructive/10 text-destructive text-sm font-bold hover:bg-destructive/20 transition">
+                        সরান
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+              <h4 className="font-bold text-foreground mb-4">👁️ প্রিভিউ</h4>
+              <div className="flex items-center gap-3 bg-secondary rounded-xl p-4">
+                {siteFavicon ? (
+                  <img src={siteFavicon} alt="Favicon" className="w-6 h-6 object-contain" />
+                ) : (
+                  <span className="text-lg">⚡</span>
+                )}
+                {siteLogo ? (
+                  <img src={siteLogo} alt="Logo" className="h-8 object-contain" />
+                ) : (
+                  <span className="text-lg font-black text-primary">Life OS</span>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">এভাবে সাইটের হেডার ও ব্রাউজার ট্যাবে দেখাবে</p>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Action Modal */}
