@@ -150,43 +150,58 @@ const DashboardPage = () => {
   }, [data.expenses]);
 
   const updateData = useCallback((partial: Partial<DayData>) => {
+    if (isImpersonating) return; // Read-only in impersonation mode
     setData(prev => {
       const next = { ...prev, ...partial };
       saveDayData(selectedDate, next);
       return next;
     });
-  }, [selectedDate]);
+  }, [selectedDate, isImpersonating]);
 
   const updateGoals = useCallback(async (newGoals: Goal[]) => {
+    if (isImpersonating) return;
     setGoalsState(newGoals);
     await saveGoals(newGoals);
-  }, []);
+  }, [isImpersonating]);
 
   const updatePermNotes = useCallback(async (notes: PermNote[]) => {
+    if (isImpersonating) return;
     setPermNotesState(notes);
     await savePermNotes(notes);
-  }, []);
+  }, [isImpersonating]);
 
   const updateAccounts = useCallback(async (accs: Record<string, { trans: Transaction[] }>) => {
+    if (isImpersonating) return;
     setAccountsState(accs);
     await saveAccounts(accs);
-  }, []);
+  }, [isImpersonating]);
 
   const updateQuickNotes = useCallback(async (notes: string[]) => {
+    if (isImpersonating) return;
     setQuickNotesState(notes);
     await saveQuickNotes(notes);
-  }, []);
+  }, [isImpersonating]);
 
   const handleHabitDefChange = useCallback(async (habits: Habit[]) => {
+    if (isImpersonating) return;
     setHabitDefs(habits);
     await saveHabitDefinitions(habits);
-    // Also update current day's habits to reflect new definitions
     const currentCheckedMap = new Map(data.habits.map(h => [h.id, h.checked]));
     const merged = habits.map(h => ({ ...h, checked: currentCheckedMap.get(h.id) || false }));
     updateData({ habits: merged });
-  }, [data.habits, updateData]);
+  }, [data.habits, updateData, isImpersonating]);
+
+  const exitImpersonation = () => {
+    localStorage.removeItem("impersonate_user_id");
+    localStorage.removeItem("impersonate_user_name");
+    navigate("/admin");
+  };
 
   const handleLogout = async () => {
+    if (isImpersonating) {
+      exitImpersonation();
+      return;
+    }
     await signOut();
     navigate("/login");
   };
