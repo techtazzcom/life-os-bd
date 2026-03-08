@@ -34,14 +34,28 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-const InfoRow = ({ icon, label, value }: { icon: string; label: string; value?: string | null }) => {
-  if (!value || value.trim() === "") return null;
+const InfoRow = ({
+  icon,
+  label,
+  value,
+  showWhenEmpty = false,
+}: {
+  icon: string;
+  label: string;
+  value?: string | null;
+  showWhenEmpty?: boolean;
+}) => {
+  const hasValue = !!value && value.trim() !== "";
+  if (!hasValue && !showWhenEmpty) return null;
+
   return (
     <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/50 border border-border/50">
       <span className="text-lg shrink-0 mt-0.5">{icon}</span>
       <div className="min-w-0">
         <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">{label}</p>
-        <p className="text-sm font-semibold text-foreground break-words">{value}</p>
+        <p className={`text-sm break-words ${hasValue ? "font-semibold text-foreground" : "font-medium text-muted-foreground"}`}>
+          {hasValue ? value : "তথ্য যোগ করা হয়নি"}
+        </p>
       </div>
     </div>
   );
@@ -142,25 +156,15 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
             {/* Info */}
             <div className="px-5 pb-6 space-y-2">
               {showEmail && <InfoRow icon="✉️" label="ইমেইল" value={profile.email} />}
-              {showMobile && <InfoRow icon="📱" label="মোবাইল" value={profile.mobile} />}
-              <InfoRow icon="💼" label="কর্মস্থল / পেশা" value={profile.work} />
-              <InfoRow icon="🩸" label="রক্তের গ্রুপ" value={profile.blood_group} />
-              <InfoRow icon="🎓" label="শিক্ষা প্রতিষ্ঠান" value={profile.institution} />
-              <InfoRow icon="🎯" label="শখ" value={profile.hobby} />
-              <InfoRow icon="🎂" label="জন্ম তারিখ" value={formatDate(profile.dob)} />
-              <InfoRow icon="🌐" label="ওয়েবসাইট" value={profile.website} />
-              <InfoRow icon="🔗" label="সোশ্যাল লিংক" value={profile.social_link} />
-              <InfoRow icon="📍" label="ঠিকানা" value={profile.address} />
-
-              {(() => {
-                const hasAny = (showEmail && profile.email && profile.email.trim()) || (showMobile && profile.mobile && profile.mobile.trim()) || (profile.work && profile.work.trim()) || (profile.blood_group && profile.blood_group.trim()) || (profile.institution && profile.institution.trim()) || (profile.hobby && profile.hobby.trim()) || (profile.dob && profile.dob.trim()) || (profile.website && profile.website.trim()) || (profile.social_link && profile.social_link.trim()) || (profile.address && profile.address.trim());
-                if (hasAny) return null;
-                return (
-                  <p className="text-center text-muted-foreground text-sm py-4 font-semibold">
-                    কোনো অতিরিক্ত তথ্য যুক্ত করা হয়নি
-                  </p>
-                );
-              })()}
+              {showMobile && <InfoRow icon="📱" label="মোবাইল" value={profile.mobile} showWhenEmpty />}
+              <InfoRow icon="💼" label="কর্মস্থল / পেশা" value={profile.work} showWhenEmpty />
+              <InfoRow icon="🩸" label="রক্তের গ্রুপ" value={profile.blood_group} showWhenEmpty />
+              <InfoRow icon="🎓" label="শিক্ষা প্রতিষ্ঠান" value={profile.institution} showWhenEmpty />
+              <InfoRow icon="🎯" label="শখ" value={profile.hobby} showWhenEmpty />
+              <InfoRow icon="🎂" label="জন্ম তারিখ" value={formatDate(profile.dob)} showWhenEmpty />
+              <InfoRow icon="🌐" label="ওয়েবসাইট" value={profile.website} showWhenEmpty />
+              <InfoRow icon="🔗" label="সোশ্যাল লিংক" value={profile.social_link} showWhenEmpty />
+              <InfoRow icon="📍" label="ঠিকানা" value={profile.address} showWhenEmpty />
             </div>
           </>
         )}
