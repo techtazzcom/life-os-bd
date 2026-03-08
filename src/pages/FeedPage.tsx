@@ -430,7 +430,7 @@ const FeedPage = () => {
           </div>
         )}
 
-        <div className="space-y-3 px-3">
+        <div className="space-y-3">
           {displayPosts.map(post => {
             const profile = profiles[post.user_id];
             const isMyPost = post.user_id === currentUserId;
