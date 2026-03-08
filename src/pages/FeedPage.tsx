@@ -78,6 +78,8 @@ const FeedPage = () => {
   const [replyInput, setReplyInput] = useState("");
   const [profiles, setProfiles] = useState<Record<string, PostProfile>>({});
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [showReactedBy, setShowReactedBy] = useState<string | null>(null);
   const replyInputRef = useRef<HTMLInputElement>(null);
 
   // Init
