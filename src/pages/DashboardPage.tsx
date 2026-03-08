@@ -101,8 +101,8 @@ const DashboardPage = () => {
     <div className="bg-background min-h-screen pb-10">
       <NavBar userName={profile?.name || 'User'} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={() => setShowSettings(true)} onProfile={() => setShowProfile(true)} notificationSlot={<NotificationBell data={data} namazTimes={namazTimes} extraSettings={extraSettings} />} />
       <main className="max-w-6xl mx-auto p-3 md:p-8 space-y-4 md:space-y-6">
-        <AIAssistant data={data} goals={goals} accounts={data.accounts} />
-        <SummaryCards data={data} />
+        <AIAssistant data={data} goals={goals} />
+        <SummaryCards data={data} accounts={data.accounts} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           <MoodTracker mood={data.mood} onMoodChange={m => updateData({ mood: m })} />
           <WaterTracker water={data.water} onWaterChange={w => updateData({ water: w })} />
