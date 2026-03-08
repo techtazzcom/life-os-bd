@@ -413,10 +413,7 @@ const ChatPage = () => {
                         {!isMine && (
                           <div className="w-8 mr-2 shrink-0 self-end">
                             {isLast && (
-                              <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${getAvatarColor(selectedUser.name)} flex items-center justify-center text-white text-[10px] font-bold shadow-sm`}>
-                                {selectedUser.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
+                              <UserAvatar name={selectedUser.name} avatarUrl={selectedUser.avatar_url} size={28} />
                           </div>
                         )}
                         <div className="max-w-[55%] group relative">
