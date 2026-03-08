@@ -476,9 +476,19 @@ const FeedPage = () => {
           <button onClick={() => navigate("/dashboard")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-lg shrink-0">←</button>
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground shadow text-base shrink-0">📰</div>
           <h1 className="text-lg font-black text-foreground flex-1 truncate">নিউজফিড</h1>
+          <button onClick={() => setSettingsOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition shrink-0">
+            <Settings size={18} />
+          </button>
           <FriendList currentUserId={currentUserId} profiles={profiles} onSelectUser={(uid) => { setProfileUserId(uid); setProfileOpen(true); }} />
           <FeedNotifications currentUserId={currentUserId} profiles={profiles} />
-          <button onClick={() => navigate("/chat")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0">💬</button>
+          <button onClick={() => navigate("/chat")} className="relative w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0">
+            💬
+            {unreadMsgCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] font-black rounded-full flex items-center justify-center animate-pulse">
+                {unreadMsgCount > 9 ? "9+" : unreadMsgCount}
+              </span>
+            )}
+          </button>
         </div>
       </nav>
 
