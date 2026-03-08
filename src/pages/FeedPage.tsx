@@ -64,12 +64,33 @@ const CATEGORIES = [
   { value: "health", label: "স্বাস্থ্য", emoji: "💪" },
 ];
 
+// Auto-detect category from content
+const detectCategory = (content: string): string => {
+  const lower = content.toLowerCase();
+  const keywords: Record<string, string[]> = {
+    tech: ["কোড", "প্রোগ্রামিং", "সফটওয়্যার", "ডেভেলপ", "টেক", "কম্পিউটার", "ল্যাপটপ", "মোবাইল", "অ্যাপ", "ওয়েব", "এআই", "ai", "code", "programming", "tech", "software", "developer", "react", "javascript", "python", "html", "css", "api", "database", "server", "linux", "github"],
+    islamic: ["আল্লাহ", "নামাজ", "কুরআন", "হাদিস", "ইসলাম", "মসজিদ", "রমজান", "ঈদ", "দোয়া", "জুমা", "সালাত", "তাওবা", "জান্নাত", "রাসূল", "সুন্নাহ", "ইবাদত", "যাকাত", "হজ্জ", "রোজা", "ইফতার", "সেহরি"],
+    health: ["স্বাস্থ্য", "ব্যায়াম", "ডাক্তার", "ওষুধ", "হাসপাতাল", "রোগ", "চিকিৎসা", "ফিটনেস", "যোগ", "ডায়েট", "ঘুম", "মানসিক", "স্ট্রেস", "health", "gym", "exercise", "doctor"],
+    education: ["পড়াশোনা", "পরীক্ষা", "বিশ্ববিদ্যালয়", "স্কুল", "কলেজ", "শিক্ষা", "বই", "গবেষণা", "পড়া", "লেখা", "জ্ঞান", "শিক্ষক", "ছাত্র", "রেজাল্ট", "পাঠ", "study", "exam", "university", "school"],
+    funny: ["হাহা", "মজা", "জোকস", "ফানি", "হাসি", "কৌতুক", "😂", "🤣", "lol", "funny", "joke", "haha"],
+    news: ["খবর", "সংবাদ", "রাজনীতি", "সরকার", "নির্বাচন", "আন্দোলন", "প্রতিবাদ", "ব্রেকিং", "দুর্ঘটনা", "আইন", "news", "breaking", "politics"],
+    life: ["জীবন", "ভালোবাসা", "পরিবার", "বন্ধু", "স্বপ্ন", "অনুভূতি", "মন", "কষ্ট", "সুখ", "দুঃখ", "ভ্রমণ", "প্রকৃতি", "গান", "সিনেমা", "ছবি", "রান্না", "খাবার"],
+  };
+  
+  let bestCat = "general";
+  let bestScore = 0;
+  for (const [cat, words] of Object.entries(keywords)) {
+    const score = words.reduce((acc, w) => acc + (lower.includes(w) ? 1 : 0), 0);
+    if (score > bestScore) { bestScore = score; bestCat = cat; }
+  }
+  return bestCat;
+};
+
 const FeedPage = () => {
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState("");
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPostContent, setNewPostContent] = useState("");
-  const [newPostCategory, setNewPostCategory] = useState("general");
   const [posting, setPosting] = useState(false);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
@@ -77,10 +98,11 @@ const FeedPage = () => {
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; postId: string; name: string } | null>(null);
   const [replyInput, setReplyInput] = useState("");
   const [profiles, setProfiles] = useState<Record<string, PostProfile>>({});
-  const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [showReactedBy, setShowReactedBy] = useState<string | null>(null);
   const replyInputRef = useRef<HTMLInputElement>(null);
+  const viewTimers = useRef<Record<string, number>>({});
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Init
   useEffect(() => {
