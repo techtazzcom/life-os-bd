@@ -22,6 +22,7 @@ import AIAssistant from "@/components/dashboard/AIAssistant";
 import MedicineCard from "@/components/dashboard/MedicineCard";
 import WeeklyAnalytics from "@/components/dashboard/WeeklyAnalytics";
 import SettingsModal from "@/components/dashboard/SettingsModal";
+import DailySummary from "@/components/dashboard/DailySummary";
 import ProfileModal from "@/components/dashboard/ProfileModal";
 import NoDataDialog from "@/components/dashboard/NoDataDialog";
 import SoundAlertManager from "@/components/dashboard/SoundAlertManager";
