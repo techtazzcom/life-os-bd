@@ -51,6 +51,7 @@ const AdminPage = () => {
   const [reportReplyText, setReportReplyText] = useState("");
   const [replyingReportId, setReplyingReportId] = useState<string | null>(null);
   const [reportAdminNote, setReportAdminNote] = useState("");
+  const [reportFilter, setReportFilter] = useState("");
 
   useEffect(() => {
     const check = async () => {
