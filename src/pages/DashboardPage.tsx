@@ -29,7 +29,7 @@ const defaultDayData: DayData = {
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const todayStr = getTodayStr();
+  const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [data, setData] = useState<DayData>(defaultDayData);
   const [goals, setGoalsState] = useState<Goal[]>([]);
@@ -38,30 +38,28 @@ const DashboardPage = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const isToday = selectedDate === getTodayStr();
+
   useEffect(() => {
     const load = async () => {
       const p = await getProfile();
       setProfile(p);
-      const saved = await loadDayData(todayStr);
-      if (saved) setData(saved);
+      const saved = await loadDayData(selectedDate);
+      setData(saved || defaultDayData);
       setGoalsState(await getGoals());
       setPermNotesState(await getPermNotes());
       setLoading(false);
     };
     load();
-  }, [todayStr]);
-
-  const saveRef = useCallback(async (newData: DayData) => {
-    await saveDayData(todayStr, newData);
-  }, [todayStr]);
+  }, [selectedDate]);
 
   const updateData = useCallback((partial: Partial<DayData>) => {
     setData(prev => {
       const next = { ...prev, ...partial };
-      saveDayData(todayStr, next);
+      saveDayData(selectedDate, next);
       return next;
     });
-  }, [todayStr]);
+  }, [selectedDate]);
 
   const updateGoals = useCallback(async (newGoals: Goal[]) => {
     setGoalsState(newGoals);
