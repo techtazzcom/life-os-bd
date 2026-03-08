@@ -44,6 +44,7 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
             আজ
           </button>
         </div>
+        {notificationSlot}
         <div className="relative" ref={menuRef}>
           <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-sm font-bold text-foreground hover:border-primary transition">
             <span className="w-7 h-7 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-black">{userName.charAt(0)}</span>
