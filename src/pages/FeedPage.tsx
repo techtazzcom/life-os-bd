@@ -123,6 +123,8 @@ const FeedPage = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+  const [spamWords, setSpamWords] = useState<string[]>([]);
+  const [spamBanStatus, setSpamBanStatus] = useState<{ banned: boolean; permanent: boolean; banUntil: string | null }>({ banned: false, permanent: false, banUntil: null });
 
   // Init
   useEffect(() => {
