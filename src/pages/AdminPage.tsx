@@ -68,6 +68,13 @@ const AdminPage = () => {
     setStats(s);
     setLogs(l);
     setAppeals(a);
+    // Load spam data
+    const { data: sw } = await supabase.from("spam_words" as any).select("*").order("created_at", { ascending: false });
+    setSpamWords((sw as any[]) || []);
+    const { data: sv } = await supabase.from("spam_violations" as any).select("*").order("created_at", { ascending: false }).limit(50);
+    setSpamViolations((sv as any[]) || []);
+    const { data: sb } = await supabase.from("spam_bans" as any).select("*").order("violation_count", { ascending: false });
+    setSpamBans((sb as any[]) || []);
   }, []);
 
   const filteredUsers = users.filter(u =>
