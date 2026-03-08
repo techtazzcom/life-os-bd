@@ -29,6 +29,7 @@ const DailySummary = lazy(() => import("@/components/dashboard/DailySummary"));
 const ProfileModal = lazy(() => import("@/components/dashboard/ProfileModal"));
 const NoDataDialog = lazy(() => import("@/components/dashboard/NoDataDialog"));
 const SoundAlertManager = lazy(() => import("@/components/dashboard/SoundAlertManager"));
+const AdminNotifBanner = lazy(() => import("@/components/dashboard/AdminNotifBanner"));
 
 const CardSkeleton = () => (
   <div className="bg-card border border-border rounded-2xl p-4 animate-pulse">
