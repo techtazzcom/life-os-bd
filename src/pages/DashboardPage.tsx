@@ -219,7 +219,15 @@ const DashboardPage = () => {
 
   return (
     <div className="bg-background min-h-screen pb-10">
-      <NavBar userName={profile?.name || 'User'} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={() => setShowSettings(true)} onProfile={() => setShowProfile(true)} notificationSlot={<NotificationBell data={data} namazTimes={namazTimes} extraSettings={extraSettings} />} />
+      {isImpersonating && (
+        <div className="bg-blue-600 text-white text-center py-2 px-4 text-sm font-bold flex items-center justify-center gap-3 sticky top-0 z-50">
+          <span>👁️ আপনি <strong>{impersonateUserName}</strong>-এর ড্যাশবোর্ড দেখছেন (শুধু দেখা যাবে, পরিবর্তন করা যাবে না)</span>
+          <button onClick={exitImpersonation} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition text-xs font-bold">
+            ✕ ফিরে যান
+          </button>
+        </div>
+      )}
+      <NavBar userName={isImpersonating ? (impersonateUserName || 'User') : (profile?.name || 'User')} selectedDate={selectedDate} onDateChange={setSelectedDate} onLogout={handleLogout} onSettings={isImpersonating ? undefined : () => setShowSettings(true)} onProfile={isImpersonating ? undefined : () => setShowProfile(true)} notificationSlot={isImpersonating ? null : <NotificationBell data={data} namazTimes={namazTimes} extraSettings={extraSettings} />} />
       <main className="max-w-6xl mx-auto p-3 md:p-8 space-y-4 md:space-y-6">
         <Suspense fallback={null}>
           <AdminNotifBanner />
