@@ -48,13 +48,21 @@ export type Database = {
           created_at: string
           dob: string | null
           email: string
+          hide_email: boolean
+          hide_mobile: boolean
           hobby: string | null
           id: string
           institution: string | null
+          intro: string | null
+          is_online: boolean
+          last_seen: string | null
           mobile: string | null
           name: string
+          social_link: string | null
           updated_at: string
           user_id: string
+          website: string | null
+          work: string | null
         }
         Insert: {
           address?: string | null
@@ -62,13 +70,21 @@ export type Database = {
           created_at?: string
           dob?: string | null
           email?: string
+          hide_email?: boolean
+          hide_mobile?: boolean
           hobby?: string | null
           id?: string
           institution?: string | null
+          intro?: string | null
+          is_online?: boolean
+          last_seen?: string | null
           mobile?: string | null
           name?: string
+          social_link?: string | null
           updated_at?: string
           user_id: string
+          website?: string | null
+          work?: string | null
         }
         Update: {
           address?: string | null
@@ -76,13 +92,21 @@ export type Database = {
           created_at?: string
           dob?: string | null
           email?: string
+          hide_email?: boolean
+          hide_mobile?: boolean
           hobby?: string | null
           id?: string
           institution?: string | null
+          intro?: string | null
+          is_online?: boolean
+          last_seen?: string | null
           mobile?: string | null
           name?: string
+          social_link?: string | null
           updated_at?: string
           user_id?: string
+          website?: string | null
+          work?: string | null
         }
         Relationships: []
       }
