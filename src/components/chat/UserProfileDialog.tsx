@@ -24,6 +24,7 @@ interface Profile {
   hide_email?: boolean;
   hide_mobile?: boolean;
   is_online?: boolean;
+  is_verified?: boolean;
   last_seen?: string | null;
   avatar_url?: string | null;
 }
