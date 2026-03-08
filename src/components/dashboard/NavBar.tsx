@@ -1,0 +1,47 @@
+import { useState, useRef, useEffect } from "react";
+
+interface Props {
+  userName: string;
+  onLogout: () => void;
+  onSettings: () => void;
+  onProfile: () => void;
+}
+
+const NavBar = ({ userName, onLogout, onSettings, onProfile }: Props) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border p-4 shadow-sm">
+      <div className="max-w-6xl mx-auto flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-lg text-lg">⚡</div>
+          <h1 className="text-xl md:text-2xl font-black tracking-tight text-foreground">Life <span className="text-primary">OS</span></h1>
+        </div>
+        <div className="relative" ref={menuRef}>
+          <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-sm font-bold text-foreground hover:border-primary transition">
+            <span className="w-7 h-7 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-black">{userName.charAt(0)}</span>
+            <span className="hidden sm:inline">{userName}</span>
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-2xl shadow-xl w-44 overflow-hidden animate-fade-in-up z-50">
+              <button onClick={() => { onSettings(); setMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-foreground hover:bg-secondary transition flex items-center gap-2">⚙️ সেটিংস</button>
+              <button onClick={() => { onProfile(); setMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-foreground hover:bg-secondary transition flex items-center gap-2">👤 প্রোফাইল</button>
+              <button onClick={onLogout} className="w-full text-left px-4 py-3 text-sm font-bold text-destructive hover:bg-destructive/10 transition flex items-center gap-2">🚪 লগআউট</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default NavBar;
