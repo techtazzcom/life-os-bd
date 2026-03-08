@@ -147,10 +147,10 @@ const ChatPage = () => {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedUser || !currentUserId) return;
-    const content = newMessage.trim();
-    setNewMessage("");
+  const sendMessage = async (overrideContent?: string) => {
+    const content = overrideContent || newMessage.trim();
+    if (!content || !selectedUser || !currentUserId) return;
+    if (!overrideContent) setNewMessage("");
     await supabase.from("messages").insert({ sender_id: currentUserId, receiver_id: selectedUser.user_id, content });
   };
 
@@ -458,7 +458,7 @@ const ChatPage = () => {
                   </div>
                   {newMessage.trim() ? (
                     <button
-                      onClick={sendMessage}
+                      onClick={() => sendMessage()}
                       className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all active:scale-90 shrink-0 shadow-sm"
                     >
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -466,7 +466,7 @@ const ChatPage = () => {
                       </svg>
                     </button>
                   ) : (
-                    <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-primary text-xl shrink-0">
+                    <button onClick={() => sendMessage("👍")} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-primary text-xl shrink-0">
                       👍
                     </button>
                   )}
@@ -703,11 +703,11 @@ const ChatPage = () => {
                 />
               </div>
               {newMessage.trim() ? (
-                <button onClick={sendMessage} className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-90 shrink-0 shadow-sm">
+                <button onClick={() => sendMessage()} className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-90 shrink-0 shadow-sm">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
                 </button>
               ) : (
-                <button className="w-10 h-10 flex items-center justify-center rounded-full text-primary hover:bg-primary/10 transition active:scale-90 text-xl shrink-0">👍</button>
+                <button onClick={() => sendMessage("👍")} className="w-10 h-10 flex items-center justify-center rounded-full text-primary hover:bg-primary/10 transition active:scale-90 text-xl shrink-0">👍</button>
               )}
             </div>
           </div>

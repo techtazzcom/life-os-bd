@@ -11,6 +11,8 @@ import { BadgeCheck } from "lucide-react";
 import UserProfileDialog from "@/components/chat/UserProfileDialog";
 import FeedNotifications from "@/components/feed/FeedNotifications";
 import FriendList from "@/components/feed/FriendList";
+import FeedSettingsModal from "@/components/feed/FeedSettingsModal";
+import { Settings } from "lucide-react";
 
 interface PostProfile {
   name: string;
@@ -116,6 +118,8 @@ const FeedPage = () => {
   const [appealSent, setAppealSent] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
 
   // Init
   useEffect(() => {
@@ -124,6 +128,24 @@ const FeedPage = () => {
     });
     getMyStatus().then(setUserStatus);
   }, []);
+
+  // Unread messages count
+  useEffect(() => {
+    if (!currentUserId) return;
+    const loadUnread = async () => {
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_id", currentUserId)
+        .eq("read", false);
+      setUnreadMsgCount(count || 0);
+    };
+    loadUnread();
+    const channel = supabase.channel("feed-msg-unread")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `receiver_id=eq.${currentUserId}` }, () => loadUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId]);
 
   // Load profiles
   useEffect(() => {
@@ -454,9 +476,19 @@ const FeedPage = () => {
           <button onClick={() => navigate("/dashboard")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-lg shrink-0">←</button>
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground shadow text-base shrink-0">📰</div>
           <h1 className="text-lg font-black text-foreground flex-1 truncate">নিউজফিড</h1>
+          <button onClick={() => setSettingsOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition shrink-0">
+            <Settings size={18} />
+          </button>
           <FriendList currentUserId={currentUserId} profiles={profiles} onSelectUser={(uid) => { setProfileUserId(uid); setProfileOpen(true); }} />
           <FeedNotifications currentUserId={currentUserId} profiles={profiles} />
-          <button onClick={() => navigate("/chat")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0">💬</button>
+          <button onClick={() => navigate("/chat")} className="relative w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0">
+            💬
+            {unreadMsgCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] font-black rounded-full flex items-center justify-center animate-pulse">
+                {unreadMsgCount > 9 ? "9+" : unreadMsgCount}
+              </span>
+            )}
+          </button>
         </div>
       </nav>
 
@@ -653,10 +685,14 @@ const FeedPage = () => {
 
                 {/* Actions */}
                 <div className="border-t border-border flex relative">
-                  <div className="flex-1 relative">
+                  <div
+                    className="flex-1 relative"
+                    onMouseEnter={() => !post.liked_by_me && setShowReactionPicker(post.id)}
+                    onMouseLeave={() => setTimeout(() => setShowReactionPicker(prev => prev === post.id ? null : prev), 500)}
+                  >
                     {/* Reaction Picker */}
                     {showReactionPicker === post.id && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-card border border-border rounded-2xl shadow-lg px-2 py-1.5 flex gap-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="absolute bottom-full left-0 mb-2 bg-card border border-border rounded-2xl shadow-lg px-2 py-1.5 flex gap-1 z-50 animate-in fade-in zoom-in-95 duration-150">
                         {REACTIONS.map(r => (
                           <button
                             key={r.type}
@@ -670,9 +706,7 @@ const FeedPage = () => {
                       </div>
                     )}
                     <button
-                      onClick={() => post.liked_by_me ? reactToPost(post, post.my_reaction!) : setShowReactionPicker(showReactionPicker === post.id ? null : post.id)}
-                      onMouseEnter={() => !post.liked_by_me && setShowReactionPicker(post.id)}
-                      onMouseLeave={() => setTimeout(() => setShowReactionPicker(prev => prev === post.id ? null : prev), 800)}
+                      onClick={() => post.liked_by_me ? reactToPost(post, post.my_reaction!) : reactToPost(post, 'like')}
                       className={`w-full py-2.5 text-sm font-bold flex items-center justify-center gap-1.5 transition hover:bg-secondary/50 ${
                         post.liked_by_me ? "text-primary" : "text-muted-foreground"
                       }`}
@@ -819,6 +853,7 @@ const FeedPage = () => {
         description="এই পোস্টটি স্থায়ীভাবে মুছে ফেলা হবে।"
       />
       <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
+      <FeedSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} currentUserId={currentUserId} profiles={profiles} />
     </div>
   );
 };

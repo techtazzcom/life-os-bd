@@ -460,6 +460,60 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          id: string
+          reason: string
+          reported_id: string
+          reporter_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          reported_id: string
+          reporter_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          reported_id?: string
+          reporter_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       user_data: {
         Row: {
           created_at: string
