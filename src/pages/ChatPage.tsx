@@ -474,18 +474,10 @@ const ChatPage = () => {
           )}
         </div>
 
-        {/* Right Insight Panel */}
-        {selectedUser && showInsightPanel && (
+        {/* Right Insight Panel - Always visible on desktop */}
+        {selectedUser && (
           <div className="w-[340px] border-l border-border bg-card shrink-0 flex flex-col overflow-y-auto no-scrollbar">
-            {/* Close button */}
-            <div className="flex items-center justify-end px-4 pt-3">
-              <button
-                onClick={() => setShowInsightPanel(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-muted-foreground text-lg"
-              >
-                ✕
-              </button>
-            </div>
+            <div className="pt-4" />
 
             {/* Profile Section */}
             <div className="flex flex-col items-center px-6 pt-2 pb-5">
