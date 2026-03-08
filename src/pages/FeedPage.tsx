@@ -717,14 +717,34 @@ const FeedPage = () => {
                       {catInfo && <span className="text-[10px] px-1.5 py-0.5 bg-secondary rounded-full text-muted-foreground font-bold">{catInfo.emoji} {catInfo.label}</span>}
                     </div>
                   </div>
-                  {isMyPost && (
+                  <div className="relative shrink-0">
                     <button
-                      onClick={() => setDeletePostId(post.id)}
-                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition text-sm"
+                      onClick={() => setReportMenuPostId(reportMenuPostId === post.id ? null : post.id)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground transition text-lg"
                     >
-                      🗑️
+                      ⋮
                     </button>
-                  )}
+                    {reportMenuPostId === post.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg z-50 min-w-[140px] py-1 animate-in fade-in zoom-in-95">
+                        {isMyPost && (
+                          <button
+                            onClick={() => { setDeletePostId(post.id); setReportMenuPostId(null); }}
+                            className="w-full px-4 py-2.5 text-left text-xs font-bold text-destructive hover:bg-destructive/10 transition flex items-center gap-2"
+                          >
+                            🗑️ ডিলেট করুন
+                          </button>
+                        )}
+                        {!isMyPost && (
+                          <button
+                            onClick={() => { setReportPostId(post.id); setReportMenuPostId(null); }}
+                            className="w-full px-4 py-2.5 text-left text-xs font-bold text-amber-600 hover:bg-amber-500/10 transition flex items-center gap-2"
+                          >
+                            🚩 রিপোর্ট করুন
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Post Content */}
