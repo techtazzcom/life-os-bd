@@ -198,6 +198,28 @@ const AdminPage = () => {
   };
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><div className="text-primary text-xl font-bold animate-pulse">এডমিন প্যানেল লোড হচ্ছে...</div></div>;
+
+  const addSpamWord = async () => {
+    if (!newSpamWord.trim()) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("spam_words" as any).insert({ word: newSpamWord.trim().toLowerCase(), added_by: user?.id });
+    setNewSpamWord("");
+    await refresh();
+    toast.success("স্প্যাম ওয়ার্ড যুক্ত হয়েছে");
+  };
+
+  const removeSpamWord = async (id: string) => {
+    await supabase.from("spam_words" as any).delete().eq("id", id);
+    await refresh();
+    toast.success("স্প্যাম ওয়ার্ড সরানো হয়েছে");
+  };
+
+  const liftSpamBan = async (userId: string) => {
+    await supabase.from("spam_bans" as any).update({ ban_until: null, is_permanent: false, updated_at: new Date().toISOString() }).eq("user_id", userId);
+    await sendAdminNotification(userId, "✅ স্প্যাম ব্যান মুক্ত", "আপনার স্প্যাম ব্যান তুলে নেওয়া হয়েছে। সতর্ক থাকুন।", "success");
+    await refresh();
+    toast.success("ব্যান মুক্ত করা হয়েছে");
+  };
   if (!authorized) return null;
 
   const timeAgo = (d: string) => { try { return formatDistanceToNow(new Date(d), { addSuffix: true, locale: bn }); } catch { return ""; } };
