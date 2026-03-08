@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from "react";
+import { format } from "date-fns";
 
 interface Props {
   userName: string;
+  selectedDate: string;
+  onDateChange: (date: string) => void;
   onLogout: () => void;
   onSettings: () => void;
   onProfile: () => void;
