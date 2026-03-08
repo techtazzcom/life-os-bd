@@ -23,6 +23,7 @@ import MedicineCard from "@/components/dashboard/MedicineCard";
 import SettingsModal from "@/components/dashboard/SettingsModal";
 import ProfileModal from "@/components/dashboard/ProfileModal";
 import NoDataDialog from "@/components/dashboard/NoDataDialog";
+import SoundAlertManager from "@/components/dashboard/SoundAlertManager";
 
 const defaultDayData: DayData = {
   mood: '', water: 0, tasks: [], expenses: [],
