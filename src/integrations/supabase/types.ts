@@ -71,6 +71,39 @@ export type Database = {
         }
         Relationships: []
       }
+      appeals: {
+        Row: {
+          admin_response: string | null
+          appeal_type: string
+          created_at: string
+          id: string
+          message: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          appeal_type?: string
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          appeal_type?: string
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       call_signals: {
         Row: {
           call_type: string

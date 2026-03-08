@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { bn } from "date-fns/locale";
+import { getMyStatus } from "@/lib/adminStore";
 
 interface PostProfile {
   name: string;
@@ -104,12 +105,16 @@ const FeedPage = () => {
   const replyInputRef = useRef<HTMLInputElement>(null);
   const viewTimers = useRef<Record<string, number>>({});
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const [userStatus, setUserStatus] = useState<{ status: string; suspend_reason: string | null }>({ status: "active", suspend_reason: null });
+  const [appealMessage, setAppealMessage] = useState("");
+  const [appealSent, setAppealSent] = useState(false);
 
   // Init
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setCurrentUserId(user.id);
     });
+    getMyStatus().then(setUserStatus);
   }, []);
 
   // Load profiles
@@ -427,7 +432,53 @@ const FeedPage = () => {
       </nav>
 
       <div className="max-w-2xl mx-auto w-full flex-1 pb-6 px-3 overflow-x-hidden">
-        {/* Create Post */}
+        {/* Blocked user screen */}
+        {userStatus.status === "blocked" ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="text-6xl mb-4">🚫</div>
+            <h2 className="text-xl font-black text-destructive mb-2">আপনার অ্যাকাউন্ট ব্লক করা হয়েছে</h2>
+            {userStatus.suspend_reason && (
+              <p className="text-sm text-muted-foreground bg-destructive/10 rounded-xl p-3 mb-4 max-w-sm text-center">
+                <span className="font-bold">কারণ:</span> {userStatus.suspend_reason}
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground mb-4">আপনি নিউজফিড দেখতে বা পোস্ট করতে পারবেন না।</p>
+            {!appealSent ? (
+              <div className="w-full max-w-sm space-y-3">
+                <textarea
+                  value={appealMessage}
+                  onChange={e => setAppealMessage(e.target.value)}
+                  placeholder="আনব্লকের জন্য আবেদন লিখুন..."
+                  className="w-full p-3 bg-secondary rounded-2xl outline-none border border-border focus:border-primary transition text-foreground text-sm resize-none h-24"
+                />
+                <button
+                  onClick={async () => {
+                    if (!appealMessage.trim() || !currentUserId) return;
+                    await supabase.from('appeals' as any).insert({ user_id: currentUserId, appeal_type: 'unblock', message: appealMessage.trim() });
+                    setAppealSent(true);
+                  }}
+                  disabled={!appealMessage.trim()}
+                  className="w-full bg-primary text-primary-foreground py-3 rounded-2xl font-bold hover:opacity-90 transition disabled:opacity-50"
+                >
+                  📩 আবেদন পাঠান
+                </button>
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="text-3xl mb-2">✅</div>
+                <p className="text-sm font-bold text-emerald-600">আবেদন পাঠানো হয়েছে!</p>
+              </div>
+            )}
+          </div>
+        ) : (
+        <>
+        {/* Create Post - hidden for suspended */}
+        {userStatus.status === "suspended" ? (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl mt-3 mb-3 p-4 text-center">
+            <p className="text-sm font-bold text-amber-600">⚠️ আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে। আপনি পোস্ট করতে পারবেন না।</p>
+            {userStatus.suspend_reason && <p className="text-xs text-muted-foreground mt-1">কারণ: {userStatus.suspend_reason}</p>}
+          </div>
+        ) : (
         <div className="bg-card border border-border rounded-2xl mt-3 mb-3 shadow-sm overflow-hidden">
           <div className="flex items-start gap-3 p-3 sm:p-4">
             <Avatar className="w-9 h-9 shrink-0 mt-0.5">
@@ -464,6 +515,7 @@ const FeedPage = () => {
             </button>
           </div>
         </div>
+        )}
 
         {/* Posts */}
         {displayPosts.length === 0 && (
@@ -726,6 +778,8 @@ const FeedPage = () => {
             );
           })}
         </div>
+        </>
+        )}
       </div>
       <DeleteConfirmDialog
         open={deletePostId !== null}

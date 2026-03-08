@@ -52,27 +52,14 @@ const ChatPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const currentUserIdRef = useRef("");
 
-  // Auth & online status
+  // Auth
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setCurrentUserId(user.id);
         currentUserIdRef.current = user.id;
-        supabase.from("profiles").update({ is_online: true, last_seen: new Date().toISOString() } as any).eq("user_id", user.id);
       }
     });
-    const handleBeforeUnload = () => {
-      if (currentUserIdRef.current) {
-        navigator.sendBeacon && supabase.from("profiles").update({ is_online: false, last_seen: new Date().toISOString() } as any).eq("user_id", currentUserIdRef.current);
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      if (currentUserIdRef.current) {
-        supabase.from("profiles").update({ is_online: false, last_seen: new Date().toISOString() } as any).eq("user_id", currentUserIdRef.current);
-      }
-    };
   }, []);
 
   // Real-time online status updates

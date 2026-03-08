@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { signOut, getProfile, loadDayData, saveDayData, getGoals, saveGoals, getPermNotes, savePermNotes, getNamazTimes, getExtraSettings, saveExtraSettings, getAccounts, saveAccounts, getQuickNotes, saveQuickNotes, getHabitDefinitions, saveHabitDefinitions, getMonthlyExpenses, getTodayStr, type DayData, type Goal, type PermNote, type UserProfile, type NamazTimes, type ExtraSettings } from "@/lib/dataStore";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { Medicine, Habit, Transaction } from "@/lib/types";
 import NavBar from "@/components/dashboard/NavBar";
 import NotificationBell from "@/components/dashboard/NotificationBell";
@@ -47,6 +48,7 @@ const defaultDayData: DayData = {
 
 const DashboardPage = () => {
   const navigate = useNavigate();
+  useOnlineStatus();
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [data, setData] = useState<DayData>(defaultDayData);
