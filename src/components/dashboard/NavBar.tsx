@@ -68,6 +68,14 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
             📅
           </button>
 
+          {/* Chat button */}
+          <button
+            onClick={() => navigate('/chat')}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm"
+          >
+            💬
+          </button>
+
           {/* Profile */}
           <div className="relative" ref={menuRef}>
             <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-1.5 bg-card border border-border px-2 md:px-3 py-1.5 rounded-full text-sm font-bold text-foreground hover:border-primary transition">
