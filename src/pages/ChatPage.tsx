@@ -707,9 +707,12 @@ const ChatPage = () => {
               {/* Input - Desktop */}
               <div className="px-5 py-3 bg-card border-t border-border shrink-0">
                 <div className="flex items-center gap-3">
-                  <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-primary text-lg shrink-0">
-                    ➕
-                  </button>
+                  {featureSettings.feature_chat_images && (
+                    <label className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-primary text-lg shrink-0 cursor-pointer">
+                      {sendingImage ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} />}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} disabled={sendingImage} />
+                    </label>
+                  )}
                   <div className="flex-1 relative">
                     <input
                       ref={inputRef}
