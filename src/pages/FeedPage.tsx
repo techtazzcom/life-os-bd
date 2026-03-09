@@ -1057,6 +1057,28 @@ const FeedPage = () => {
                         </>
                       ) : (
                         <>
+                          {/* Comment image preview */}
+                          {commentImagePreviews[post.id] && (
+                            <div className="relative w-12 h-12 shrink-0">
+                              <img src={commentImagePreviews[post.id]!} alt="" className="w-12 h-12 rounded-lg object-cover border border-border" />
+                              <button
+                                onClick={() => { setCommentImages(prev => ({ ...prev, [post.id]: null })); setCommentImagePreviews(prev => ({ ...prev, [post.id]: null })); }}
+                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[8px]"
+                              >✕</button>
+                            </div>
+                          )}
+                          {featureSettings.feature_comment_images && (
+                            <label className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary cursor-pointer transition text-primary shrink-0">
+                              <ImagePlus size={16} />
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                if (file.size > 10 * 1024 * 1024) { toast.error("ছবি 10MB এর বেশি!"); return; }
+                                setCommentImages(prev => ({ ...prev, [post.id]: file }));
+                                setCommentImagePreviews(prev => ({ ...prev, [post.id]: URL.createObjectURL(file) }));
+                              }} />
+                            </label>
+                          )}
                           <input
                             value={commentInputs[post.id] || ""}
                             onChange={e => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
@@ -1064,7 +1086,7 @@ const FeedPage = () => {
                             placeholder="মন্তব্য লিখুন..."
                             className="flex-1 px-3 py-2 rounded-xl bg-secondary border border-border text-xs font-bold text-foreground outline-none focus:border-primary transition"
                           />
-                          <button onClick={() => addComment(post.id)} disabled={!commentInputs[post.id]?.trim()} className="bg-primary text-primary-foreground px-3 py-2 rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-50 transition">→</button>
+                          <button onClick={() => addComment(post.id)} disabled={!commentInputs[post.id]?.trim() && !commentImages[post.id]} className="bg-primary text-primary-foreground px-3 py-2 rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-50 transition">→</button>
                         </>
                       )}
                     </div>
