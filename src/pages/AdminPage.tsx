@@ -103,10 +103,13 @@ const AdminPage = () => {
     // Load site settings
     const { data: siteSettings } = await supabase.from("site_settings" as any).select("*");
     if (siteSettings) {
+      const toggles: Record<string, boolean> = {};
       (siteSettings as any[]).forEach((s: any) => {
         if (s.key === "site_logo") setSiteLogo(s.value || "");
         if (s.key === "site_favicon") setSiteFavicon(s.value || "");
+        if (s.key.startsWith("feature_")) toggles[s.key] = s.value === "true";
       });
+      setFeatureToggles(toggles);
     }
   }, []);
 
