@@ -56,6 +56,7 @@ const AdminPage = () => {
   const [siteFavicon, setSiteFavicon] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const check = async () => {
