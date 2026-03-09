@@ -65,6 +65,7 @@ interface ConversationItem {
 const ChatPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { settings: featureSettings } = useFeatureSettings();
   const [currentUserId, setCurrentUserId] = useState("");
   const [users, setUsers] = useState<Profile[]>([]);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
@@ -79,6 +80,7 @@ const ChatPage = () => {
   const { startCall } = useCall();
   const inputRef = useRef<HTMLInputElement>(null);
   const currentUserIdRef = useRef("");
+  const [sendingImage, setSendingImage] = useState(false);
 
   // Group chat state
   const [showCreateGroup, setShowCreateGroup] = useState(false);
