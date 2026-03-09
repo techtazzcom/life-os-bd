@@ -683,7 +683,8 @@ const ChatPage = () => {
                               ? 'bg-primary text-primary-foreground shadow-sm'
                               : 'bg-secondary text-foreground'
                           }`}>
-                            <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                            <p className="whitespace-pre-wrap break-words">{m.content !== "📷 ছবি" ? m.content : ""}</p>
+                            {m.image_url && <img src={m.image_url} alt="ছবি" className="mt-1 rounded-lg max-w-[250px] max-h-[200px] object-cover cursor-pointer" loading="lazy" onClick={() => window.open(m.image_url!, '_blank')} />}
                           </div>
                           <div className={`absolute top-1/2 -translate-y-1/2 ${isMine ? 'right-full mr-2' : 'left-full ml-2'} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap`}>
                             <span className="text-[11px] text-muted-foreground bg-card border border-border px-2 py-1 rounded-lg shadow-sm">
