@@ -8,6 +8,9 @@ import UserAvatar, { getAvatarColor } from "@/components/chat/UserAvatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { compressImage } from "@/lib/imageCompress";
+import { useFeatureSettings } from "@/hooks/useFeatureSettings";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ChatGroup {
