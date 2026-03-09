@@ -975,7 +975,8 @@ const FeedPage = () => {
                             <div className="flex-1 min-w-0">
                               <div className="bg-card border border-border rounded-xl px-3 py-2">
                                 <p className="text-[11px] font-black text-foreground">{profiles[comment.user_id]?.name || "অজানা"}</p>
-                                <p className="text-xs text-foreground font-semibold mt-0.5 break-words">{comment.content}</p>
+                                {comment.content !== "📷" && <p className="text-xs text-foreground font-semibold mt-0.5 break-words">{comment.content}</p>}
+                                {comment.image_url && <img src={comment.image_url} alt="" className="mt-1.5 rounded-lg max-h-40 object-cover" loading="lazy" />}
                               </div>
                               <div className="flex items-center gap-3 mt-1 px-1">
                                 <span className="text-[10px] text-muted-foreground">{timeAgo(comment.created_at)}</span>
