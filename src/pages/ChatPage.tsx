@@ -194,6 +194,30 @@ const ChatPage = () => {
     await supabase.from("messages").insert({ sender_id: currentUserId, receiver_id: selectedUser.user_id, content });
   };
 
+  const sendImageMessage = async (file: File) => {
+    if (!selectedUser || !currentUserId) return;
+    setSendingImage(true);
+    try {
+      const compressed = await compressImage(file);
+      const path = `chat/${currentUserId}/${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("media").upload(path, compressed, { contentType: "image/jpeg" });
+      if (error) throw error;
+      const { data } = supabase.storage.from("media").getPublicUrl(path);
+      await supabase.from("messages").insert({ sender_id: currentUserId, receiver_id: selectedUser.user_id, content: "📷 ছবি", image_url: data.publicUrl });
+    } catch {
+      toast.error("ছবি পাঠানো ব্যর্থ!");
+    }
+    setSendingImage(false);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { toast.error("ছবি 10MB এর বেশি!"); return; }
+    sendImageMessage(file);
+    e.target.value = "";
+  };
+
   const formatTime = (dateStr: string) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
