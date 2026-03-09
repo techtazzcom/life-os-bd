@@ -655,6 +655,10 @@ const FeedPage = () => {
       </nav>
 
       <div className="max-w-2xl mx-auto w-full flex-1 pb-6 px-3 overflow-x-hidden">
+        {/* Stories */}
+        {featureSettings.feature_stories && userStatus.status !== "blocked" && (
+          <StoriesBar currentUserId={currentUserId} profiles={profiles} />
+        )}
         {/* Blocked user screen */}
         {userStatus.status === "blocked" ? (
           <div className="flex flex-col items-center justify-center py-20">
