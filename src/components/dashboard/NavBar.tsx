@@ -77,7 +77,8 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
                 type="date"
                 value={pendingDate}
                 onChange={(e) => setPendingDate(e.target.value)}
-                className="bg-card border border-border rounded-full px-3 py-1.5 text-sm font-bold text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 w-36 cursor-pointer"
+                className="bg-card border border-border rounded-full px-3 py-1.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 w-36 cursor-pointer"
+                style={{ color: 'transparent', caretColor: 'transparent' }}
               />
               <span className="absolute inset-0 flex items-center px-3 text-sm font-bold text-foreground pointer-events-none">
                 {(() => {
@@ -162,7 +163,8 @@ const NavBar = ({ userName, selectedDate, onDateChange, onLogout, onSettings, on
               type="date"
               value={pendingDate}
               onChange={(e) => setPendingDate(e.target.value)}
-              className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm font-bold text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              style={{ color: 'transparent', caretColor: 'transparent' }}
             />
             <span className="absolute inset-0 flex items-center px-3 text-sm font-bold text-foreground pointer-events-none">
               {(() => {
