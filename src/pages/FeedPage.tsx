@@ -1,82 +1,46 @@
-// src/pages/FeedPage.tsx - এই অংশ যোগ করুন/পরিবর্তন করুন
+import PostComposer from "@/components/feed/PostComposer";
+import PostFeed from "@/components/feed/PostFeed";
 
-import { createPost, getPosts, deletePost, likePost, unlikePost } from "@/lib/feedStore";
+// Component এর মধ্যে এগুলো যোগ করুন:
 
-// Component-এর মধ্যে post submission handler যোগ করুন:
+export default function FeedPage() {
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-const handlePostSubmit = async () => {
-  if (!postContent.trim()) {
-    toast.error("পোস্ট খালি রাখা যায় না!");
-    return;
-  }
-
-  if (!selectedCategory) {
-    toast.error("ক্যাটাগরি নির্বাচন করুন!");
-    return;
-  }
-
-  // Check spam
-  if (spamWordsLoaded) {
-    const spamResult = checkSpam(postContent);
-    if (spamResult.isSpam) {
-      recordViolation(currentUserId, "spam_post");
-      const isBanned = await isSpamBanned(currentUserId);
-      if (isBanned) {
-        toast.error("আপনি স্প্যাম করার কারণে সাময়িক নিষেধাজ্ঞায় আছেন!");
-        return;
+  useEffect(() => {
+    // Get current user
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setCurrentUserId(data.user.id);
       }
-      toast.error("আপনার পোস্টে নিষিদ্ধ শব্দ রয়েছে!");
-      return;
-    }
-  }
+    });
+  }, []);
 
-  setPosting(true);
+  const handlePostSubmitted = () => {
+    // ফিড রিফ্রেশ করুন
+    setRefreshTrigger(prev => prev + 1);
+  };
 
-  try {
-    let imageUrl = null;
+  return (
+    <div className="min-h-screen bg-background">
+      {/* স্টোরি বার */}
+      <StoriesBar currentUserId={currentUserId} profiles={{}} />
 
-    // Upload image if selected
-    if (selectedImage) {
-      const compressed = await compressImage(selectedImage);
-      const fileName = `posts/${currentUserId}/${Date.now()}.jpg`;
-      const { error: uploadError, data } = await supabase.storage
-        .from("user-media")
-        .upload(fileName, compressed);
+      {/* পোস্ট কম্পোজার */}
+      <PostComposer 
+        currentUserId={currentUserId}
+        onPostSubmitted={handlePostSubmitted}
+      />
 
-      if (uploadError) throw uploadError;
+      {/* ফিড */}
+      <PostFeed 
+        currentUserId={currentUserId}
+        refreshTrigger={refreshTrigger}
+      />
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("user-media").getPublicUrl(fileName);
-      imageUrl = publicUrl;
-    }
-
-    // Create post
-    const result = await createPost(
-      currentUserId,
-      postContent,
-      selectedCategory,
-      imageUrl
-    );
-
-    if (!result.success) {
-      toast.error(result.error || "পোস্ট তৈরি করতে ব্যর্থ");
-      return;
-    }
-
-    // Success - clear form and reload posts
-    toast.success("পোস্ট সফলভাবে শেয়ার করা হয়েছে! ✨");
-    setPostContent("");
-    setSelectedImage(null);
-    setPreviewUrl(null);
-    setSelectedCategory("general");
-
-    // Reload posts
-    await loadPosts();
-  } catch (error: any) {
-    console.error("Submit error:", error);
-    toast.error(error?.message || "পোস্ট শেয়ার করতে ব্যর্থ");
-  } finally {
-    setPosting(false);
-  }
-};
+      {/* নোটিফিকেশন এবং অন্যান্য */}
+      <FeedNotifications currentUserId={currentUserId} profiles={{}} />
+      <FeedSettingsModal open={false} onOpenChange={() => {}} currentUserId={currentUserId} profiles={{}} />
+    </div>
+  );
+}
