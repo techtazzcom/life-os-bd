@@ -385,7 +385,7 @@ const createPost = async () => {
   }
   const autoCategory = detectCategory(newPostContent);
   
-  // ✅ FIX: Use .select().single() to get the created post data
+// ✅ FIX: Use .select().single() to get the created post data
   const { data: newPost, error } = await supabase.from("posts").insert({
     user_id: currentUserId,
     content: newPostContent.trim() || "📷",
@@ -393,9 +393,10 @@ const createPost = async () => {
     image_url: imageUrl,
   }).select().single();
   
-  // ✅ Handle errors
+  // ✅ Handle errors with detailed logging
   if (error || !newPost) {
-    toast.error("পোস্ট তৈরিতে সমস্যা হয়েছে!");
+    console.error("Supabase Post Error Details:", error);
+    toast.error(`সমস্যা হয়েছে: ${error?.message || "অজানা ত্রুটি"}`);
     setPosting(false);
     return;
   }
