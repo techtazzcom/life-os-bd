@@ -12,7 +12,7 @@ import FeedNotifications from "@/components/feed/FeedNotifications";
 import FriendList from "@/components/feed/FriendList";
 import FeedSettingsModal from "@/components/feed/FeedSettingsModal";
 import LinkPreview from "@/components/feed/LinkPreview";
-// StoriesBar ইমপোর্ট সরিয়ে ফেলা হয়েছে কারণ এটি নিউজফিডে প্রয়োজন নেই
+// StoriesBar ইমপোর্ট বাদ দেওয়া হয়েছে
 import { loadSpamWords, checkSpam, recordViolation, isSpamBanned } from "@/lib/spamChecker";
 import { compressImage } from "@/lib/imageCompress";
 import { useFeatureSettings } from "@/hooks/useFeatureSettings";
@@ -83,13 +83,13 @@ const CATEGORIES = [
 const detectCategory = (content: string): string => {
   const lower = content.toLowerCase();
   const keywords: Record<string, string[]> = {
-    tech: ["কোড", "প্রোগ্রামিং", "সফটওয়্যার", "ডেভেলপ", "টেক", "컴퓨터", "code", "programming", "react", "javascript"],
-    islamic: ["আল্লাহ", "নামাজ", "কুরআন", "হাদিস", "ইসলাম", "মসজিদ"],
-    health: ["স্বাস্থ্য", "ব্যায়াম", "ডাক্তার", "ওষুধ"],
-    education: ["পড়াশোনা", "পরীক্ষা", "শিক্ষা", "বই"],
-    funny: ["হাহা", "মজা", "জোকস", "😂", "🤣"],
-    news: ["খবর", "সংবাদ", "ব্রেকিং"],
-    life: ["জীবন", "ভালোবাসা", "পরিবার", "বন্ধু"],
+    tech: ["কোড", "প্রোগ্রামিং", "সফটওয়্যার", "টেক", "code", "programming", "react", "javascript"],
+    islamic: ["আল্লাহ", "নামাজ", "কুরআন", "হাদিস", "ইসলাম"],
+    health: ["স্বাস্থ্য", "ব্যায়াম", "ডাক্তার"],
+    education: ["পড়াশোনা", "পরীক্ষা", "শিক্ষা"],
+    funny: ["হাহা", "মজা", "😂", "🤣"],
+    news: ["খবর", "সংবাদ"],
+    life: ["জীবন", "ভালোবাসা", "পরিবার"],
   };
   
   let bestCat = "general";
@@ -117,8 +117,6 @@ const FeedPage = () => {
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [showReactedBy, setShowReactedBy] = useState<string | null>(null);
   const replyInputRef = useRef<HTMLInputElement>(null);
-  const viewTimers = useRef<Record<string, number>>({});
-  const observerRef = useRef<IntersectionObserver | null>(null);
   const [userStatus, setUserStatus] = useState<{ status: string; suspend_reason: string | null }>({ status: "active", suspend_reason: null });
   const [appealMessage, setAppealMessage] = useState("");
   const [appealSent, setAppealSent] = useState(false);
@@ -133,6 +131,17 @@ const FeedPage = () => {
   const [postImagePreview, setPostImagePreview] = useState<string | null>(null);
   const [commentImages, setCommentImages] = useState<Record<string, File | null>>({});
   const [commentImagePreviews, setCommentImagePreviews] = useState<Record<string, string | null>>({});
+
+  // Report System States (সংরক্ষিত)
+  const [deletePostId, setDeletePostId] = useState<string | null>(null);
+  const [reportPostId, setReportPostId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState("");
+  const [reportSending, setReportSending] = useState(false);
+  const [reportMenuPostId, setReportMenuPostId] = useState<string | null>(null);
+  const [myReports, setMyReports] = useState<any[]>([]);
+  const [showMyReports, setShowMyReports] = useState(false);
+  const [replyToReportId, setReplyToReportId] = useState<string | null>(null);
+  const [reportReplyText, setReportReplyText] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -199,10 +208,10 @@ const FeedPage = () => {
   const uploadImage = async (file: File, folder: string): Promise<string | null> => {
     try {
       const compressed = await compressImage(file);
-      const path = `${folder}/${currentUserId}/${Date.now()}.jpg`;
-      const { error } = await supabase.storage.from("media").upload(path, compressed, { contentType: "image/jpeg" });
+      const fileName = `${currentUserId}/${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("media").upload(`${folder}/${fileName}`, compressed, { contentType: "image/jpeg" });
       if (error) throw error;
-      const { data } = supabase.storage.from("media").getPublicUrl(path);
+      const { data } = supabase.storage.from("media").getPublicUrl(`${folder}/${fileName}`);
       return data.publicUrl;
     } catch {
       toast.error("ছবি আপলোড ব্যর্থ!");
@@ -211,9 +220,9 @@ const FeedPage = () => {
   };
 
   const createPost = async () => {
-    if ((!newPostContent.trim() && !postImage) || !currentUserId) return;
+    if ((!newPostContent.trim() && !postImage) || !currentUserId || posting) return;
     if (spamBanStatus.banned) {
-      toast.error(spamBanStatus.permanent ? "আপনার পোস্ট করার অধিকার স্থায়ীভাবে বন্ধ।" : "সাময়িকভাবে বন্ধ।");
+      toast.error("আপনার পোস্ট করার অধিকার বন্ধ।");
       return;
     }
     setPosting(true);
@@ -221,27 +230,65 @@ const FeedPage = () => {
     if (postImage) {
       imageUrl = await uploadImage(postImage, "posts");
     }
-    const autoCategory = detectCategory(newPostContent);
     const { data: newPost, error } = await supabase.from("posts").insert({
       user_id: currentUserId,
       content: newPostContent.trim() || "📷",
-      category: autoCategory,
+      category: detectCategory(newPostContent),
       image_url: imageUrl,
     }).select().single();
     
-    if (error || !newPost) {
-      console.error("Post error:", error);
+    if (error) {
       toast.error("পোস্ট তৈরিতে সমস্যা হয়েছে!");
-      setPosting(false);
-      return;
+    } else {
+      loadPosts();
+      setNewPostContent("");
+      setPostImage(null);
+      setPostImagePreview(null);
+      toast.success("পোস্ট সফলভাবে তৈরি হয়েছে!");
     }
-    
-    setPosts([{ ...newPost, profile: profiles[currentUserId], likes_count: 0, comments_count: 0, liked_by_me: false, my_reaction: null, reactions: [] }, ...posts]);
-    setNewPostContent("");
-    setPostImage(null);
-    setPostImagePreview(null);
     setPosting(false);
-    toast.success("পোস্ট সফলভাবে তৈরি হয়েছে!");
+  };
+
+  const loadComments = async (postId: string) => {
+    const { data } = await supabase.from("post_comments").select("*").eq("post_id", postId).order("created_at", { ascending: true });
+    if (data) {
+      const { data: cLikes } = await supabase.from("comment_likes").select("comment_id, user_id").in("comment_id", data.map(c => c.id));
+      const enriched: Comment[] = data.map(c => ({
+        ...c,
+        profile: profiles[c.user_id],
+        likes_count: cLikes?.filter(l => l.comment_id === c.id).length || 0,
+        liked_by_me: cLikes?.some(l => l.comment_id === c.id && l.user_id === currentUserId) || false,
+      }));
+      setComments(prev => ({ ...prev, [postId]: enriched }));
+    }
+  };
+
+  const toggleComments = (postId: string) => {
+    const next = new Set(expandedComments);
+    if (next.has(postId)) { next.delete(postId); } 
+    else { next.add(postId); loadComments(postId); }
+    setExpandedComments(next);
+  };
+
+  const addComment = async (postId: string) => {
+    const text = commentInputs[postId]?.trim();
+    if (!text && !commentImages[postId]) return;
+    let imageUrl: string | null = null;
+    if (commentImages[postId]) imageUrl = await uploadImage(commentImages[postId]!, "comments");
+    
+    const { error } = await supabase.from("post_comments").insert({
+      post_id: postId,
+      user_id: currentUserId,
+      content: text || "📷",
+      image_url: imageUrl
+    });
+
+    if (!error) {
+      setCommentInputs(prev => ({ ...prev, [postId]: "" }));
+      setCommentImagePreviews(prev => ({ ...prev, [postId]: null }));
+      loadComments(postId);
+      loadPosts();
+    }
   };
 
   const reactToPost = async (post: Post, reactionType: string) => {
@@ -255,37 +302,32 @@ const FeedPage = () => {
     loadPosts();
   };
 
-  const toggleComments = async (postId: string) => {
-    const next = new Set(expandedComments);
-    if (next.has(postId)) {
-      next.delete(postId);
-    } else {
-      next.add(postId);
-      const { data } = await supabase.from("post_comments").select("*").eq("post_id", postId).order("created_at", { ascending: true });
-      if (data) {
-        setComments(prev => ({ ...prev, [postId]: data.map(c => ({ ...c, profile: profiles[c.user_id], likes_count: 0, liked_by_me: false })) }));
-      }
-    }
-    setExpandedComments(next);
+  const deletePost = async (postId: string) => {
+    await supabase.from("posts").delete().eq("id", postId);
+    setDeletePostId(null);
+    loadPosts();
   };
 
-  const addComment = async (postId: string) => {
-    const text = commentInputs[postId]?.trim();
-    if (!text && !commentImages[postId]) return;
-    let imageUrl: string | null = null;
-    if (commentImages[postId]) imageUrl = await uploadImage(commentImages[postId]!, "comments");
-    await supabase.from("post_comments").insert({ post_id: postId, user_id: currentUserId, content: text || "📷", image_url: imageUrl });
-    setCommentInputs(prev => ({ ...prev, [postId]: "" }));
-    setCommentImagePreviews(prev => ({ ...prev, [postId]: null }));
-    loadPosts();
+  const submitReport = async () => {
+    if (!reportPostId || !reportReason.trim()) return;
+    setReportSending(true);
+    await supabase.from("reports").insert({
+      reporter_id: currentUserId,
+      reason: reportReason.trim(),
+      post_id: reportPostId,
+    } as any);
+    toast.success("রিপোর্ট জমা হয়েছে!");
+    setReportPostId(null);
+    setReportReason("");
+    setReportSending(false);
   };
 
   return (
     <div className="bg-background min-h-screen flex flex-col overflow-x-hidden">
       <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border p-3 shadow-sm">
         <div className="max-w-2xl mx-auto flex items-center gap-2">
-          <button onClick={() => navigate("/dashboard")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition shrink-0">←</button>
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground shadow text-base shrink-0">📰</div>
+          <button onClick={() => navigate("/dashboard")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border shrink-0">←</button>
+          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground text-base shrink-0">📰</div>
           <h1 className="text-[15px] sm:text-lg font-black text-foreground flex-1 truncate">নিউজফিড</h1>
           <button onClick={() => setSettingsOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary"><Settings size={18} /></button>
           <FriendList currentUserId={currentUserId} profiles={profiles} onSelectUser={(uid) => { setProfileUserId(uid); setProfileOpen(true); }} />
@@ -297,56 +339,50 @@ const FeedPage = () => {
       </nav>
 
       <div className="max-w-2xl mx-auto w-full flex-1 pb-6 px-3">
-        {/* Stories - পুরোপুরি বাদ দেওয়া হয়েছে */}
-        
-        {userStatus.status === "suspended" ? (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl mt-3 p-4 text-center">
-            <p className="text-sm font-bold text-amber-600">⚠️ আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে।</p>
+        {/* Stories - পুরোপুরি সরিয়ে দেওয়া হয়েছে */}
+
+        <div className="bg-card border border-border rounded-2xl mt-3 mb-3 shadow-sm overflow-hidden">
+          <div className="flex items-start gap-3 p-4">
+            <Avatar className="w-9 h-9 shrink-0"><AvatarFallback>{profiles[currentUserId]?.name?.charAt(0)}</AvatarFallback></Avatar>
+            <textarea
+              value={newPostContent}
+              onChange={e => setNewPostContent(e.target.value)}
+              placeholder="আপনার মনে কী আছে...?"
+              className="flex-1 bg-transparent text-sm font-semibold outline-none resize-none min-h-[60px]"
+            />
           </div>
-        ) : (
-          <div className="bg-card border border-border rounded-2xl mt-3 mb-3 shadow-sm overflow-hidden">
-            <div className="flex items-start gap-3 p-4">
-              <Avatar className="w-9 h-9 shrink-0"><AvatarFallback>{profiles[currentUserId]?.name?.charAt(0)}</AvatarFallback></Avatar>
-              <textarea
-                value={newPostContent}
-                onChange={e => setNewPostContent(e.target.value)}
-                placeholder="আপনার মনে কী আছে...?"
-                className="flex-1 bg-transparent text-sm font-semibold outline-none resize-none min-h-[60px]"
-              />
+          {postImagePreview && (
+            <div className="px-3 pb-2 relative">
+              <img src={postImagePreview} className="w-full max-h-60 object-cover rounded-xl border border-border" alt="Preview" />
+              <button onClick={() => { setPostImage(null); setPostImagePreview(null); }} className="absolute top-2 right-5 bg-black/50 text-white rounded-full p-1"><X size={14} /></button>
             </div>
-            {postImagePreview && (
-              <div className="px-3 pb-2 relative">
-                <img src={postImagePreview} className="w-full max-h-60 object-cover rounded-xl" alt="Preview" />
-                <button onClick={() => { setPostImage(null); setPostImagePreview(null); }} className="absolute top-2 right-5 bg-black/50 text-white rounded-full p-1"><X size={14} /></button>
-              </div>
-            )}
-            <div className="border-t border-border px-3 py-2 flex items-center justify-between">
-              <label className="cursor-pointer text-primary hover:bg-secondary p-2 rounded-full transition">
-                <ImagePlus size={20} />
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) { setPostImage(file); setPostImagePreview(URL.createObjectURL(file)); }
-                }} />
-              </label>
-              <button
-                onClick={createPost}
-                disabled={(!newPostContent.trim() && !postImage) || posting}
-                className="bg-primary text-primary-foreground px-5 py-1.5 rounded-full text-xs font-black disabled:opacity-50"
-              >
-                {posting ? "পোস্ট হচ্ছে..." : "পোস্ট করুন"}
-              </button>
-            </div>
+          )}
+          <div className="border-t border-border px-3 py-2 flex items-center justify-between">
+            <label className="cursor-pointer text-primary hover:bg-secondary p-2 rounded-full transition">
+              <ImagePlus size={20} />
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) { setPostImage(file); setPostImagePreview(URL.createObjectURL(file)); }
+              }} />
+            </label>
+            <button
+              onClick={createPost}
+              disabled={(!newPostContent.trim() && !postImage) || posting}
+              className="bg-primary text-primary-foreground px-5 py-1.5 rounded-full text-xs font-black disabled:opacity-50 flex items-center gap-1"
+            >
+              {posting && <Loader2 size={12} className="animate-spin" />}
+              {posting ? "পোস্ট হচ্ছে..." : "পোস্ট করুন"}
+            </button>
           </div>
-        )}
+        </div>
 
         <div className="space-y-3">
           {posts.map(post => {
             const profile = profiles[post.user_id];
-            const catInfo = CATEGORIES.find(c => c.value === post.category);
             return (
               <div key={post.id} className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
                 <div className="flex items-center gap-3 p-4 pb-2">
-                  <Avatar className="w-10 h-10"><AvatarFallback>{profile?.name?.charAt(0)}</AvatarFallback></Avatar>
+                  <Avatar className="w-10 h-10 cursor-pointer" onClick={() => { setProfileUserId(post.user_id); setProfileOpen(true); }}><AvatarFallback>{profile?.name?.charAt(0)}</AvatarFallback></Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-1">
                       <p className="font-bold text-sm">{profile?.name || "User"}</p>
@@ -354,40 +390,60 @@ const FeedPage = () => {
                     </div>
                     <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: bn })}</p>
                   </div>
-                  {post.user_id === currentUserId && (
-                    <button onClick={async () => { if(confirm("ডিলেট করবেন?")) { await supabase.from("posts").delete().eq("id", post.id); loadPosts(); } }} className="text-muted-foreground text-xs">🗑️</button>
-                  )}
+                  <div className="relative">
+                    <button onClick={() => setReportMenuPostId(reportMenuPostId === post.id ? null : post.id)} className="text-muted-foreground p-1">⋮</button>
+                    {reportMenuPostId === post.id && (
+                      <div className="absolute right-0 top-full bg-card border border-border rounded-xl shadow-lg z-50 py-1 min-w-[120px]">
+                        {post.user_id === currentUserId ? (
+                          <button onClick={() => setDeletePostId(post.id)} className="w-full px-4 py-2 text-left text-xs font-bold text-destructive hover:bg-destructive/10">🗑️ মুছুন</button>
+                        ) : (
+                          <button onClick={() => setReportPostId(post.id)} className="w-full px-4 py-2 text-left text-xs font-bold text-amber-600 hover:bg-amber-100">🚩 রিপোর্ট</button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="px-4 pb-3">
                   <p className="text-sm font-semibold whitespace-pre-wrap">{post.content !== "📷" && post.content}</p>
+                  <LinkPreview content={post.content} />
                 </div>
 
-                {/* ✅ Image Display Fix - স্টোরি বার এর বদলে এখন ইমেজ দেখাবে */}
+                {/* ✅ Post Image Fix */}
                 {post.image_url && (
                   <div className="w-full bg-secondary/10">
-                    <img 
-                      src={post.image_url} 
-                      alt="Post Content" 
-                      className="w-full h-auto max-h-[500px] object-contain" 
-                      loading="lazy" 
-                    />
+                    <img src={post.image_url} alt="Post" className="w-full h-auto max-h-[500px] object-contain" loading="lazy" />
                   </div>
                 )}
 
                 <div className="border-t border-border flex">
-                  <button onClick={() => reactToPost(post, 'like')} className={`flex-1 py-3 text-xs font-bold ${post.liked_by_me ? 'text-primary' : 'text-muted-foreground'}`}>👍 লাইক ({post.likes_count})</button>
+                  <button onClick={() => reactToPost(post, 'like')} className={`flex-1 py-3 text-xs font-bold ${post.liked_by_me ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {post.liked_by_me ? (REACTIONS.find(r => r.type === post.my_reaction)?.emoji || "👍") : "👍"} লাইক ({post.likes_count})
+                  </button>
                   <button onClick={() => toggleComments(post.id)} className="flex-1 py-3 text-xs font-bold text-muted-foreground border-l border-border">💬 মন্তব্য ({post.comments_count})</button>
                 </div>
 
                 {expandedComments.has(post.id) && (
                   <div className="bg-secondary/10 p-4 border-t border-border">
+                    <div className="space-y-3 mb-3 max-h-60 overflow-y-auto">
+                      {comments[post.id]?.map(comment => (
+                        <div key={comment.id} className="flex gap-2">
+                          <Avatar className="w-7 h-7"><AvatarFallback>{comment.profile?.name?.charAt(0)}</AvatarFallback></Avatar>
+                          <div className="flex-1 bg-card border border-border rounded-xl px-3 py-2">
+                            <p className="text-[10px] font-black">{comment.profile?.name}</p>
+                            <p className="text-xs">{comment.content}</p>
+                            {comment.image_url && <img src={comment.image_url} className="mt-1 rounded-lg max-h-40" alt="comment" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                     <div className="flex gap-2">
                       <input
                         value={commentInputs[post.id] || ""}
                         onChange={e => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
                         placeholder="মন্তব্য লিখুন..."
                         className="flex-1 bg-card border border-border rounded-xl px-3 py-2 text-xs outline-none"
+                        onKeyDown={e => e.key === "Enter" && addComment(post.id)}
                       />
                       <button onClick={() => addComment(post.id)} className="bg-primary text-white px-4 rounded-xl text-xs">→</button>
                     </div>
@@ -398,8 +454,24 @@ const FeedPage = () => {
           })}
         </div>
       </div>
+
+      {/* Modals & Dialogs (সংরক্ষিত) */}
+      <DeleteConfirmDialog open={deletePostId !== null} onOpenChange={() => setDeletePostId(null)} onConfirm={() => deletePost(deletePostId!)} />
       <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
       <FeedSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} currentUserId={currentUserId} profiles={profiles} />
+      
+      {reportPostId && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl w-full max-w-sm p-6 shadow-xl">
+            <h3 className="text-lg font-black mb-4">🚩 রিপোর্ট করুন</h3>
+            <textarea value={reportReason} onChange={e => setReportReason(e.target.value)} placeholder="কারণ লিখুন..." className="w-full p-3 rounded-xl bg-secondary border border-border h-24 mb-4 text-sm" />
+            <div className="flex gap-2">
+              <button onClick={() => setReportPostId(null)} className="flex-1 py-2 bg-secondary rounded-xl font-bold">বাতিল</button>
+              <button onClick={submitReport} disabled={!reportReason.trim() || reportSending} className="flex-1 py-2 bg-destructive text-white rounded-xl font-bold">পাঠান</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
