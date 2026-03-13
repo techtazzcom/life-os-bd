@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import PostComposer from "@/components/feed/PostComposer";
 import PostFeed from "@/components/feed/PostFeed";
-import StoriesBar from "@/components/feed/StoriesBar";
 import FeedNotifications from "@/components/feed/FeedNotifications";
 
 export default function FeedPage() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [profiles, setProfiles] = useState<Record<string, { name: string; avatar_url?: string | null }>>({});
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -17,33 +16,38 @@ export default function FeedPage() {
     });
   }, []);
 
+  // প্রোফাইল লোড করুন নোটিফিকেশনের জন্য
+  useEffect(() => {
+    if (!currentUserId) return;
+    const fetchProfiles = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, name, avatar_url");
+      if (data) {
+        const map: Record<string, { name: string; avatar_url?: string | null }> = {};
+        data.forEach((p: any) => {
+          map[p.id] = { name: p.name, avatar_url: p.avatar_url };
+        });
+        setProfiles(map);
+      }
+    };
+    fetchProfiles();
+  }, [currentUserId]);
+
   const handlePostSubmitted = () => {
-    setRefreshTrigger((prev) => prev + 1);
+    setRefreshTrigger(prev => prev + 1);
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-      {/* স্টোরি বার */}
-      <StoriesBar currentUserId={currentUserId} />
-
-      {/* পোস্ট কম্পোজার */}
-      <PostComposer
-        currentUserId={currentUserId}
-        onPostSubmitted={handlePostSubmitted}
-      />
+    <div className="max-w-2xl mx-auto py-4 px-2">
+      {/* পোস্ট কম্পোজার - পরে PostComposer কম্পোনেন্ট তৈরি করে এখানে যোগ করুন */}
+      {/* <PostComposer currentUserId={currentUserId} onPostSubmitted={handlePostSubmitted} /> */}
 
       {/* ফিড */}
-      <PostFeed
-        currentUserId={currentUserId}
-        refreshTrigger={refreshTrigger}
-      />
+      <PostFeed currentUserId={currentUserId} refreshTrigger={refreshTrigger} />
 
       {/* নোটিফিকেশন */}
-      <FeedNotifications
-        onClose={() => {}}
-        currentUserId={currentUserId}
-        profiles={{}}
-      />
+      <FeedNotifications currentUserId={currentUserId} profiles={profiles} />
     </div>
   );
 }
