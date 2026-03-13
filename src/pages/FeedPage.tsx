@@ -1,14 +1,15 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import PostComposer from "@/components/feed/PostComposer";
 import PostFeed from "@/components/feed/PostFeed";
-
-// Component এর মধ্যে এগুলো যোগ করুন:
+import StoriesBar from "@/components/feed/StoriesBar";
+import FeedNotifications from "@/components/feed/FeedNotifications";
 
 export default function FeedPage() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    // Get current user
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setCurrentUserId(data.user.id);
@@ -17,30 +18,32 @@ export default function FeedPage() {
   }, []);
 
   const handlePostSubmitted = () => {
-    // ফিড রিফ্রেশ করুন
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       {/* স্টোরি বার */}
-      <StoriesBar currentUserId={currentUserId} profiles={{}} />
+      <StoriesBar currentUserId={currentUserId} />
 
       {/* পোস্ট কম্পোজার */}
-      <PostComposer 
+      <PostComposer
         currentUserId={currentUserId}
         onPostSubmitted={handlePostSubmitted}
       />
 
       {/* ফিড */}
-      <PostFeed 
+      <PostFeed
         currentUserId={currentUserId}
         refreshTrigger={refreshTrigger}
       />
 
-      {/* নোটিফিকেশন এবং অন্যান্য */}
-      <FeedNotifications currentUserId={currentUserId} profiles={{}} />
-      <FeedSettingsModal open={false} onOpenChange={() => {}} currentUserId={currentUserId} profiles={{}} />
+      {/* নোটিফিকেশন */}
+      <FeedNotifications
+        onClose={() => {}}
+        currentUserId={currentUserId}
+        profiles={{}}
+      />
     </div>
   );
 }
