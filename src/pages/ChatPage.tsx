@@ -883,11 +883,21 @@ const ChatPage = () => {
     {u.name}
   </span>
   
-  {/* ইউজারের অনলাইন স্ট্যাটাস বা সময় */}
+<div className="flex flex-col flex-1 text-left truncate">
+  <span className="text-sm font-bold text-foreground">{u.name}</span>
   <div className="flex items-center gap-1">
     {renderUserStatus(u.last_seen)}
   </div>
 </div>
+
+
+
+
+
+
+
+
+  
                           {isSelected && <span className="text-primary text-lg">✓</span>}
                         </button>
                       );
