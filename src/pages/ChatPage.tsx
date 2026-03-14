@@ -883,8 +883,15 @@ const ChatPage = () => {
                           className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition ${isSelected ? 'bg-primary/10 border border-primary/30' : 'hover:bg-secondary border border-transparent'}`}
                         >
                           <UserAvatar name={u.name} avatarUrl={u.avatar_url} size={36} />
-                          <span className="text-sm font-bold text-foreground flex-1 text-left truncate">{u.name}</span>
-                          <div className="flex items-center gap-1">  {renderUserStatus(u.last_seen)}</div>
+{/* নাম দেখানোর লাইন (এটি থাকবে) */}
+<span className="text-sm font-bold text-foreground flex-1 text-left truncate">
+  {u.name}
+</span>
+
+{/* এর ঠিক নিচে এই নতুন অংশটি যোগ করুন */}
+<div className="flex items-center gap-1">
+  {renderUserStatus(u.last_seen)}
+</div>
                           {isSelected && <span className="text-primary text-lg">✓</span>}
                         </button>
                       );
