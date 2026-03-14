@@ -25,15 +25,80 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    let currentUserId: string | null = null;
+    let heartbeatInterval: NodeJS.Timeout;
+
+    // ডাটাবেসে অনলাইন স্ট্যাটাস এবং লাস্ট সিন আপডেট করার ফাংশন
+    const updateOnlineStatus = async (isOnline: boolean) => {
+      if (!currentUserId) return;
+      try {
+        await supabase.from("profiles").update({
+          is_online: isOnline,
+          last_seen: new Date().toISOString()
+        }).eq("user_id", currentUserId);
+      } catch (e) {
+        console.error("Failed to update status", e);
+      }
+    };
+
+    const handleVisibility = () => {
+      updateOnlineStatus(document.visibilityState === 'visible');
+    };
+
+    const handleUnload = () => {
+      updateOnlineStatus(false);
+    };
+
+    const setupStatusTracking = (userId: string) => {
+      currentUserId = userId;
+      updateOnlineStatus(true);
+      
+      window.addEventListener('visibilitychange', handleVisibility);
+      window.addEventListener('beforeunload', handleUnload);
+      window.addEventListener('pagehide', handleUnload); // মোবাইলের জন্য
+      
+      // প্রতি ১ মিনিট পর পর ইউজারের লাস্ট সিন আপডেট করবে যদি সে ট্যাবে থাকে
+      heartbeatInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          updateOnlineStatus(true);
+        }
+      }, 60000); 
+    };
+
+    const cleanupStatusTracking = () => {
+      if (currentUserId) updateOnlineStatus(false);
+      window.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('pagehide', handleUnload);
+      clearInterval(heartbeatInterval);
+      currentUserId = null;
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthenticated(!!session);
       setLoading(false);
+      if (session?.user?.id) {
+         if (currentUserId !== session.user.id) {
+             cleanupStatusTracking();
+             setupStatusTracking(session.user.id);
+         }
+      } else {
+         cleanupStatusTracking();
+      }
     });
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthenticated(!!session);
       setLoading(false);
+      if (session?.user?.id) {
+         if (!currentUserId) setupStatusTracking(session.user.id);
+      }
     });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      cleanupStatusTracking();
+    };
   }, []);
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><div className="text-primary text-xl font-bold animate-pulse">Life OS লোড হচ্ছে...</div></div>;
