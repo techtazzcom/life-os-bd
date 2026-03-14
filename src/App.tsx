@@ -24,6 +24,35 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
+
+// ইউজারের অ্যাক্টিভিটি আপডেট করার জন্য নতুন কোড
+  useEffect(() => {
+    const updateActivity = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase
+          .from('profiles')
+          .update({ 
+            last_seen: new Date().toISOString(),
+            is_online: true 
+          })
+          .eq('user_id', session.user.id);
+      }
+    };
+
+    // ইউজার যখনই সাইটে থাকবে, প্রতি ১ মিনিট পরপর আপডেট হবে
+    updateActivity(); 
+    const interval = setInterval(updateActivity, 60000); 
+
+    return () => clearInterval(interval);
+  }, []);
+
+
+
+
+
+
+  
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setAuthenticated(!!session);
