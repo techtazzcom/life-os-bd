@@ -73,6 +73,47 @@ const DashboardPage = () => {
   const isToday = selectedDate === getTodayStr();
   const prevDateRef = useRef(getTodayStr());
 
+
+
+// --- ইউজারের অনলাইন স্ট্যাটাস অটো-আপডেট করার কোড ---
+  useEffect(() => {
+    const updateLastSeen = async () => {
+      // বর্তমানে লগিন থাকা ইউজারকে খুঁজে বের করা
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // প্রোফাইল টেবিলে last_seen সময়টি বর্তমান সময়ে আপডেট করা
+        await supabase
+          .from('profiles')
+          .update({ 
+            last_seen: new Date().toISOString(),
+            is_online: true // ইউজার অ্যাক্টিভ থাকলে ট্রু থাকবে
+          })
+          .eq('user_id', user.id);
+      }
+    };
+
+    // পেজ লোড হলে একবার রান হবে
+    updateLastSeen();
+
+    // প্রতি ১ মিনিট (৬০,০০০ মিলিসেকেন্ড) পরপর টাইম আপডেট করবে
+    const interval = setInterval(updateLastSeen, 60000);
+
+    // ইউজার যখন পেজ থেকে চলে যাবে তখন ইন্টারভাল বন্ধ হবে
+    return () => clearInterval(interval);
+  }, []);
+
+
+
+
+
+
+
+
+
+
+  
+
   // Auto-switch to new day at midnight with greeting
   useEffect(() => {
     if (isImpersonating) return;
