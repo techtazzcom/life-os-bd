@@ -100,6 +100,9 @@ const detectCategory = (content: string): string => {
   return bestCat;
 };
 
+// URL Checker Helper Function
+const hasUrlRegex = /(https?:\/\/[^\s]+)/;
+
 const FeedPage = () => {
   const navigate = useNavigate();
   const { settings: featureSettings } = useFeatureSettings();
@@ -322,7 +325,6 @@ const FeedPage = () => {
     }
   };
 
-  // Fixed Image Upload
   const uploadImage = async (file: File, folder: string): Promise<string | null> => {
     try {
       const compressed = await compressImage(file);
@@ -370,7 +372,7 @@ const FeedPage = () => {
         imageUrl = await uploadImage(postImage, "posts");
         if(postImage && !imageUrl) {
             setPosting(false);
-            return; // Stop if image upload failed
+            return; 
         }
       }
       const autoCategory = detectCategory(newPostContent);
@@ -404,7 +406,6 @@ const FeedPage = () => {
     }
   };
 
-  // Fixed React function
   const reactToPost = async (post: Post, reactionType: string) => {
     setShowReactionPicker(null);
     try {
@@ -412,10 +413,8 @@ const FeedPage = () => {
           const { error } = await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", currentUserId);
           if(error) throw error;
         } else if (post.liked_by_me) {
-          // Fallback strategy for updating reaction if RLS update fails
           const { error } = await supabase.from("post_likes").update({ reaction_type: reactionType } as any).eq("post_id", post.id).eq("user_id", currentUserId);
           if (error) {
-              console.warn("Update failed, trying fallback insert...", error);
               await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", currentUserId);
               const { error: insError } = await supabase.from("post_likes").insert({ post_id: post.id, user_id: currentUserId, reaction_type: reactionType } as any);
               if(insError) throw insError;
@@ -434,7 +433,7 @@ const FeedPage = () => {
             });
           }
         }
-        loadPosts(); // Update UI immediately
+        loadPosts(); 
     } catch (error: any) {
         console.error("Reaction error:", error);
         toast.error("রিয়্যাক্ট করতে সমস্যা হয়েছে! পারমিশন চেক করুন।");
@@ -483,7 +482,6 @@ const FeedPage = () => {
     setExpandedComments(next);
   };
 
-  // Fixed Add Comment function
   const addComment = async (postId: string) => {
     const text = commentInputs[postId]?.trim();
     const imgFile = commentImages[postId];
@@ -510,19 +508,23 @@ const FeedPage = () => {
     let imageUrl: string | null = null;
     if (imgFile) {
       imageUrl = await uploadImage(imgFile, "comments");
-      if(imgFile && !imageUrl) return; // Error handled inside uploadImage
+      if(imgFile && !imageUrl) return; 
     }
 
-    const { error } = await supabase.from("post_comments").insert({
+    // Improved Payload format
+    const payload: any = {
       post_id: postId,
       user_id: currentUserId,
       content: text || "📷",
-      image_url: imageUrl,
-    });
+    };
+    if (imageUrl) payload.image_url = imageUrl;
+
+    const { error } = await supabase.from("post_comments").insert(payload);
 
     if (error) {
         console.error("Comment Insert Error:", error);
-        toast.error("কমেন্ট প্রকাশ করতে সমস্যা হয়েছে! পারমিশন চেক করুন।");
+        // Error message update to show exact database block reason
+        toast.error(`কমেন্ট প্রকাশ করতে সমস্যা! ${error.message || "পারমিশন চেক করুন"}`);
         return;
     }
     
@@ -555,7 +557,7 @@ const FeedPage = () => {
     });
     
     if (error) {
-        toast.error("রিপ্লাই প্রকাশ করতে সমস্যা হয়েছে! পারমিশন চেক করুন।");
+        toast.error(`রিপ্লাই প্রকাশ করতে সমস্যা! ${error.message || "পারমিশন চেক করুন"}`);
         return;
     }
 
@@ -857,7 +859,8 @@ const FeedPage = () => {
 
                 <div className="px-3 sm:px-4 pb-3">
                   <p className="text-sm text-foreground font-semibold whitespace-pre-wrap break-words leading-relaxed overflow-hidden">{post.content !== "📷" ? post.content : ""}</p>
-                  <LinkPreview content={post.content} />
+                  {/* FIX: LinkPreview will ONLY render if there is an actual URL in the content */}
+                  {hasUrlRegex.test(post.content || "") && <LinkPreview content={post.content} />}
                 </div>
 
                 {post.image_url && (
