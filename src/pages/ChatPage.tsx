@@ -12,6 +12,17 @@ import { compressImage } from "@/lib/imageCompress";
 import { useFeatureSettings } from "@/hooks/useFeatureSettings";
 import { ImagePlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { bn } from "date-fns/locale";
+
+
+
+
+
+
+
+
+
 
 interface ChatGroup {
   id: string;
@@ -81,6 +92,27 @@ const ChatPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const currentUserIdRef = useRef("");
   const [sendingImage, setSendingImage] = useState(false);
+
+  const renderUserStatus = (lastSeen: string | null | undefined) => {
+  if (!lastSeen) return <span className="text-muted-foreground text-xs">অফলাইন</span>;
+
+  const lastSeenDate = new Date(lastSeen);
+  const now = new Date();
+  const diffInMinutes = (now.getTime() - lastSeenDate.getTime()) / (1000 * 60);
+
+  // যদি ইউজার গত ৩ মিনিটের মধ্যে অ্যাক্টিভ থাকে, তবে "অনলাইন" দেখাবে
+  if (diffInMinutes <= 3) {
+    return <span className="text-emerald-500 text-xs font-bold">🟢 অনলাইন</span>;
+  }
+
+  // ৩ মিনিটের বেশি হলে "কতক্ষণ আগে ছিল" তা বাংলায় দেখাবে
+  return (
+    <span className="text-muted-foreground text-xs">
+      {formatDistanceToNow(lastSeenDate, { addSuffix: true, locale: bn })}
+    </span>
+  );
+};
+
 
   // Group chat state
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -852,6 +884,7 @@ const ChatPage = () => {
                         >
                           <UserAvatar name={u.name} avatarUrl={u.avatar_url} size={36} />
                           <span className="text-sm font-bold text-foreground flex-1 text-left truncate">{u.name}</span>
+                          <div className="flex items-center gap-1">  {renderUserStatus(u.last_seen)}</div>
                           {isSelected && <span className="text-primary text-lg">✓</span>}
                         </button>
                       );
