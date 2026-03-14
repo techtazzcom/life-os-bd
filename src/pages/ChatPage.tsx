@@ -15,15 +15,6 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { bn } from "date-fns/locale";
 
-
-
-
-
-
-
-
-
-
 interface ChatGroup {
   id: string;
   name: string;
@@ -93,10 +84,12 @@ const ChatPage = () => {
   const currentUserIdRef = useRef("");
   const [sendingImage, setSendingImage] = useState(false);
 
-const renderUserStatus = (lastSeen: string | null | undefined) => {
+// অনলাইন স্ট্যাটাস চেক করার ফাংশন
+  const renderUserStatus = (lastSeen: string | null | undefined) => {
     if (!lastSeen) return <span className="text-muted-foreground text-[10px]">অফলাইন</span>;
     const lastSeenDate = new Date(lastSeen);
     const now = new Date();
+    // ৫ মিনিটের কম সময় হলে অনলাইন দেখাবে
     const isOnline = (now.getTime() - lastSeenDate.getTime()) < 5 * 60 * 1000;
 
     if (isOnline) {
@@ -108,7 +101,7 @@ const renderUserStatus = (lastSeen: string | null | undefined) => {
       </span>
     );
   };
-
+  
   // Group chat state
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groups, setGroups] = useState<ChatGroup[]>([]);
@@ -878,10 +871,17 @@ const renderUserStatus = (lastSeen: string | null | undefined) => {
                           className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition ${isSelected ? 'bg-primary/10 border border-primary/30' : 'hover:bg-secondary border border-transparent'}`}
                         >
                           <UserAvatar name={u.name} avatarUrl={u.avatar_url} size={36} />
-{/* নাম দেখানোর লাইন (এটি থাকবে) */}
-<span className="text-sm font-bold text-foreground flex-1 text-left truncate">
-  {u.name}
-</span>
+<div className="flex flex-col flex-1 text-left truncate">
+  {/* ইউজারের নাম */}
+  <span className="text-sm font-bold text-foreground">
+    {u.name}
+  </span>
+  
+  {/* ইউজারের অনলাইন স্ট্যাটাস বা সময় */}
+  <div className="flex items-center gap-1">
+    {renderUserStatus(u.last_seen)}
+  </div>
+</div>
 
 {/* এর ঠিক নিচে এই নতুন অংশটি যোগ করুন */}
 <div className="flex items-center gap-1">
@@ -1260,13 +1260,7 @@ const renderUserStatus = (lastSeen: string | null | undefined) => {
                       >
                         <UserAvatar name={u.name} avatarUrl={u.avatar_url} size={36} />
                         {/* অনলাইন থাকলে সবুজ বাতি, নাহলে কতক্ষণ আগে ছিল তা দেখাবে */}
-{isUserActuallyOnline(profile) ? (
-  <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" title="Online" />
-) : (
-  <span className="text-[10px] text-muted-foreground shrink-0">
-    {profile?.last_seen ? timeAgo(profile.last_seen) : "অফলাইন"}
-  </span>
-)}
+{renderUserStatus(u.last_seen)}
                         {isSelected && <span className="text-primary text-lg">✓</span>}
                       </button>
                     );
