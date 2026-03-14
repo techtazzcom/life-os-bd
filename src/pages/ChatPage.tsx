@@ -673,11 +673,8 @@ const ChatPage = () => {
                 {isUserOnline(selectedUser) && <span className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-[3px] border-card rounded-full" />}
               </div>
               <h3 className="text-lg font-bold text-foreground">{selectedUser.name}</h3>
-              <p className="text-[13px] mt-0.5">
-                {isUserOnline(selectedUser)
-                  ? <span className="text-green-500 font-medium">● সক্রিয়</span>
-                  : <span className="text-muted-foreground">{formatLastSeen(selectedUser.last_seen)}</span>
-                }
+              <p className="text-[13px] text-muted-foreground mt-0.5">
+                {isUserOnline(selectedUser) ? "সক্রিয়" : formatLastSeen(selectedUser.last_seen)}
               </p>
             </div>
 
@@ -717,7 +714,12 @@ const ChatPage = () => {
           </div>
         )}
 
-        <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
+        <UserProfileDialog 
+          userId={profileUserId} 
+          open={profileOpen} 
+          onOpenChange={setProfileOpen}
+          isOnline={isUserOnline(users.find(u => u.user_id === profileUserId) || (selectedUser?.user_id === profileUserId ? selectedUser : null))}
+        />
 
         <Dialog open={showCreateGroup} onOpenChange={setShowCreateGroup}>
           <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden max-h-[85vh] flex flex-col">
@@ -912,11 +914,8 @@ const ChatPage = () => {
               </button>
               <div className="flex-1 min-w-0" onClick={() => { setProfileUserId(selectedUser!.user_id); setProfileOpen(true); }}>
                 <p className="font-bold text-[14px] text-foreground truncate leading-tight">{selectedUser!.name}</p>
-                <p className="text-[11px] leading-tight mt-0.5">
-                  {isUserOnline(selectedUser!)
-                    ? <span className="text-green-500 font-medium">● সক্রিয়</span>
-                    : <span className="text-muted-foreground">{formatLastSeen(selectedUser!.last_seen)}</span>
-                  }
+                <p className="text-[11px] leading-tight">
+                  {isUserOnline(selectedUser!) ? <span className="text-green-500 font-medium">সক্রিয়</span> : <span className="text-muted-foreground">{formatLastSeen(selectedUser!.last_seen)}</span>}
                 </p>
               </div>
               <div className="flex items-center gap-1">
@@ -1002,11 +1001,8 @@ const ChatPage = () => {
                 {isUserOnline(selectedUser) && <span className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-[3px] border-background rounded-full" />}
               </div>
               <h3 className="text-lg font-bold text-foreground">{selectedUser.name}</h3>
-              <p className="text-[13px] mt-0.5">
-                {isUserOnline(selectedUser)
-                  ? <span className="text-green-500 font-medium">● সক্রিয়</span>
-                  : <span className="text-muted-foreground">{formatLastSeen(selectedUser.last_seen)}</span>
-                }
+              <p className="text-[13px] text-muted-foreground mt-0.5">
+                {isUserOnline(selectedUser) ? "সক্রিয়" : formatLastSeen(selectedUser.last_seen)}
               </p>
             </div>
 
@@ -1046,7 +1042,12 @@ const ChatPage = () => {
           </div>
         </div>
       )}
-      <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
+      <UserProfileDialog 
+        userId={profileUserId} 
+        open={profileOpen} 
+        onOpenChange={setProfileOpen}
+        isOnline={isUserOnline(users.find(u => u.user_id === profileUserId) || (selectedUser?.user_id === profileUserId ? selectedUser : null))}
+      />
 
       <Dialog open={showCreateGroup} onOpenChange={setShowCreateGroup}>
         <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden max-h-[85vh] flex flex-col">
