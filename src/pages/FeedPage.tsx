@@ -79,7 +79,6 @@ const CATEGORIES = [
   { value: "health", label: "স্বাস্থ্য", emoji: "💪" },
 ];
 
-// Auto-detect category from content
 const detectCategory = (content: string): string => {
   const lower = content.toLowerCase();
   const keywords: Record<string, string[]> = {
@@ -135,7 +134,6 @@ const FeedPage = () => {
   const [commentImages, setCommentImages] = useState<Record<string, File | null>>({});
   const [commentImagePreviews, setCommentImagePreviews] = useState<Record<string, string | null>>({});
 
-  // Init
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
@@ -147,7 +145,6 @@ const FeedPage = () => {
     loadSpamWords().then(setSpamWords);
   }, []);
 
-  // Unread messages count
   useEffect(() => {
     if (!currentUserId) return;
     const loadUnread = async () => {
@@ -165,7 +162,6 @@ const FeedPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [currentUserId]);
 
-  // Load profiles
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from("profiles").select("user_id, name, is_online, is_verified, avatar_url");
@@ -178,7 +174,6 @@ const FeedPage = () => {
     load();
   }, []);
 
-  // Load posts
   const loadPosts = useCallback(async () => {
     if (!currentUserId) return;
 
@@ -228,16 +223,21 @@ const FeedPage = () => {
     enriched.sort((a, b) => {
       const aInterest = interestMap[a.category] || 0;
       const bInterest = interestMap[b.category] || 0;
+      
       const aEngagement = a.likes_count * 2 + a.comments_count * 4;
       const bEngagement = b.likes_count * 2 + b.comments_count * 4;
+      
       const aAge = (Date.now() - new Date(a.created_at).getTime()) / 3600000;
       const bAge = (Date.now() - new Date(b.created_at).getTime()) / 3600000;
       const aDecay = Math.exp(-aAge * 0.08);
       const bDecay = Math.exp(-bAge * 0.08);
+      
       const aVelocity = aAge > 0 ? aEngagement / Math.max(aAge, 0.5) : aEngagement * 2;
       const bVelocity = bAge > 0 ? bEngagement / Math.max(bAge, 0.5) : bEngagement * 2;
+      
       const aOtherBoost = a.user_id !== currentUserId ? 1.2 : 1;
       const bOtherBoost = b.user_id !== currentUserId ? 1.2 : 1;
+      
       const aScore = ((aInterest * 15) + aEngagement + (aVelocity * 3)) * aDecay * aOtherBoost;
       const bScore = ((bInterest * 15) + bEngagement + (bVelocity * 3)) * bDecay * bOtherBoost;
       return bScore - aScore;
@@ -248,7 +248,6 @@ const FeedPage = () => {
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
-  // Realtime
   useEffect(() => {
     if (!currentUserId) return;
     const channel = supabase
@@ -269,18 +268,20 @@ const FeedPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [currentUserId, loadPosts, expandedComments]);
 
-  // View-time tracking
   useEffect(() => {
     if (!currentUserId) return;
+    
     observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const postId = entry.target.getAttribute("data-post-id");
         if (!postId) return;
+        
         if (entry.isIntersecting) {
           viewTimers.current[postId] = Date.now();
         } else if (viewTimers.current[postId]) {
           const viewTime = (Date.now() - viewTimers.current[postId]) / 1000;
           delete viewTimers.current[postId];
+          
           if (viewTime >= 3) {
             const post = posts.find(p => p.id === postId);
             if (post) {
@@ -301,38 +302,44 @@ const FeedPage = () => {
 
   const trackInterest = async (category: string) => {
     if (!currentUserId) return;
-    const { data } = await supabase.from("user_interests").select("score").eq("user_id", currentUserId).eq("category", category).single();
+    const { data } = await supabase
+      .from("user_interests")
+      .select("score")
+      .eq("user_id", currentUserId)
+      .eq("category", category)
+      .single();
+
     if (data) {
-      await supabase.from("user_interests").update({ score: data.score + 1, updated_at: new Date().toISOString() }).eq("user_id", currentUserId).eq("category", category);
+      await supabase
+        .from("user_interests")
+        .update({ score: data.score + 1, updated_at: new Date().toISOString() })
+        .eq("user_id", currentUserId)
+        .eq("category", category);
     } else {
-      await supabase.from("user_interests").insert({ user_id: currentUserId, category, score: 1 });
+      await supabase
+        .from("user_interests")
+        .insert({ user_id: currentUserId, category, score: 1 });
     }
   };
 
-  // Upload image helper - FIXED with Fallback
+  // Fixed Image Upload
   const uploadImage = async (file: File, folder: string): Promise<string | null> => {
     try {
-      let fileToUpload = file;
-      try {
-        fileToUpload = await compressImage(file);
-      } catch (compressErr) {
-        console.warn("Compression failed, using original file", compressErr);
-      }
-      
+      const compressed = await compressImage(file);
       const path = `${folder}/${currentUserId}/${Date.now()}.jpg`;
-      const { error } = await supabase.storage.from("media").upload(path, fileToUpload, { contentType: file.type || "image/jpeg" });
+      const { error } = await supabase.storage.from("media").upload(path, compressed, { contentType: "image/jpeg" });
       
       if (error) throw error;
+      
       const { data } = supabase.storage.from("media").getPublicUrl(path);
       return data.publicUrl;
-    } catch (error: any) {
-      console.error("Upload Error:", error);
-      toast.error(`ছবি আপলোড ব্যর্থ! ${error.message || ""}`);
+    } catch (err: any) {
+      console.error("Upload Error:", err);
+      toast.error(`ছবি আপলোড ব্যর্থ! ${err.message || "Bucket not found"}`);
       return null;
     }
   };
 
-  // Create post
   const createPost = async () => {
     if ((!newPostContent.trim() && !postImage) || !currentUserId) return;
     
@@ -361,9 +368,9 @@ const FeedPage = () => {
     try {
       if (postImage) {
         imageUrl = await uploadImage(postImage, "posts");
-        if (!imageUrl) {
-          setPosting(false);
-          return; // Stop post creation if image upload fails
+        if(postImage && !imageUrl) {
+            setPosting(false);
+            return; // Stop if image upload failed
         }
       }
       const autoCategory = detectCategory(newPostContent);
@@ -383,6 +390,7 @@ const FeedPage = () => {
       }
       
       await loadPosts();
+      
       trackInterest(autoCategory);
       setNewPostContent("");
       setPostImage(null);
@@ -396,30 +404,57 @@ const FeedPage = () => {
     }
   };
 
-  // React to post
+  // Fixed React function
   const reactToPost = async (post: Post, reactionType: string) => {
     setShowReactionPicker(null);
-    if (post.my_reaction === reactionType) {
-      await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", currentUserId);
-    } else if (post.liked_by_me) {
-      await supabase.from("post_likes").update({ reaction_type: reactionType } as any).eq("post_id", post.id).eq("user_id", currentUserId);
-    } else {
-      await supabase.from("post_likes").insert({ post_id: post.id, user_id: currentUserId, reaction_type: reactionType } as any);
-      trackInterest(post.category);
-      if (post.user_id !== currentUserId) {
-        await supabase.from("feed_notifications").insert({ user_id: post.user_id, actor_id: currentUserId, type: 'like', post_id: post.id });
-      }
+    try {
+        if (post.my_reaction === reactionType) {
+          const { error } = await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", currentUserId);
+          if(error) throw error;
+        } else if (post.liked_by_me) {
+          // Fallback strategy for updating reaction if RLS update fails
+          const { error } = await supabase.from("post_likes").update({ reaction_type: reactionType } as any).eq("post_id", post.id).eq("user_id", currentUserId);
+          if (error) {
+              console.warn("Update failed, trying fallback insert...", error);
+              await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", currentUserId);
+              const { error: insError } = await supabase.from("post_likes").insert({ post_id: post.id, user_id: currentUserId, reaction_type: reactionType } as any);
+              if(insError) throw insError;
+          }
+        } else {
+          const { error } = await supabase.from("post_likes").insert({ post_id: post.id, user_id: currentUserId, reaction_type: reactionType } as any);
+          if(error) throw error;
+
+          trackInterest(post.category);
+          if (post.user_id !== currentUserId) {
+            await supabase.from("feed_notifications").insert({
+              user_id: post.user_id,
+              actor_id: currentUserId,
+              type: 'like',
+              post_id: post.id
+            });
+          }
+        }
+        loadPosts(); // Update UI immediately
+    } catch (error: any) {
+        console.error("Reaction error:", error);
+        toast.error("রিয়্যাক্ট করতে সমস্যা হয়েছে! পারমিশন চেক করুন।");
     }
-    loadPosts();
   };
 
-  // Load comments
   const loadComments = async (postId: string) => {
-    const { data } = await supabase.from("post_comments").select("*").eq("post_id", postId).order("created_at", { ascending: true });
+    const { data } = await supabase
+      .from("post_comments")
+      .select("*")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true });
+
     if (!data) return;
 
     const commentIds = data.map(c => c.id);
-    const { data: cLikes } = await supabase.from("comment_likes").select("comment_id, user_id").in("comment_id", commentIds);
+    const { data: cLikes } = await supabase
+      .from("comment_likes")
+      .select("comment_id, user_id")
+      .in("comment_id", commentIds);
 
     const enriched: Comment[] = data.map(c => ({
       ...c,
@@ -430,17 +465,25 @@ const FeedPage = () => {
 
     const topLevel = enriched.filter(c => !c.parent_id);
     const replies = enriched.filter(c => c.parent_id);
-    topLevel.forEach(c => { c.replies = replies.filter(r => r.parent_id === c.id); });
+    topLevel.forEach(c => {
+      c.replies = replies.filter(r => r.parent_id === c.id);
+    });
+
     setComments(prev => ({ ...prev, [postId]: topLevel }));
   };
 
   const toggleComments = (postId: string) => {
     const next = new Set(expandedComments);
-    if (next.has(postId)) { next.delete(postId); } else { next.add(postId); loadComments(postId); }
+    if (next.has(postId)) {
+      next.delete(postId);
+    } else {
+      next.add(postId);
+      loadComments(postId);
+    }
     setExpandedComments(next);
   };
 
-  // Add comment - FIXED with Error handling
+  // Fixed Add Comment function
   const addComment = async (postId: string) => {
     const text = commentInputs[postId]?.trim();
     const imgFile = commentImages[postId];
@@ -457,47 +500,53 @@ const FeedPage = () => {
         if (result.banned) {
           setSpamBanStatus({ banned: true, permanent: result.permanent, banUntil: result.permanent ? null : new Date(Date.now() + result.banDays * 86400000).toISOString() });
           toast.error(result.permanent ? "স্প্যামের কারণে স্থায়ী ব্যান!" : `${result.banDays} দিনের ব্যান!`);
-        } else { toast.warning(`⚠️ "${matched}" স্প্যাম ওয়ার্ড!`); }
+        } else {
+          toast.warning(`⚠️ "${matched}" স্প্যাম ওয়ার্ড!`);
+        }
         return;
       }
     }
-    
+
     let imageUrl: string | null = null;
     if (imgFile) {
       imageUrl = await uploadImage(imgFile, "comments");
-      if (!imageUrl) return; // Stop if image fails
+      if(imgFile && !imageUrl) return; // Error handled inside uploadImage
     }
-    
+
     const { error } = await supabase.from("post_comments").insert({
       post_id: postId,
       user_id: currentUserId,
       content: text || "📷",
       image_url: imageUrl,
     });
-    
+
     if (error) {
-      console.error("Comment Insert Error:", error);
-      toast.error("কমেন্ট প্রকাশ করতে সমস্যা হয়েছে! পারমিশন চেক করুন।");
-      return;
+        console.error("Comment Insert Error:", error);
+        toast.error("কমেন্ট প্রকাশ করতে সমস্যা হয়েছে! পারমিশন চেক করুন।");
+        return;
     }
     
     const post = posts.find(p => p.id === postId);
     if (post && post.user_id !== currentUserId) {
-      await supabase.from("feed_notifications").insert({ user_id: post.user_id, actor_id: currentUserId, type: 'comment', post_id: postId });
+      await supabase.from("feed_notifications").insert({
+        user_id: post.user_id,
+        actor_id: currentUserId,
+        type: 'comment',
+        post_id: postId
+      });
     }
-    
     setCommentInputs(prev => ({ ...prev, [postId]: "" }));
     setCommentImages(prev => ({ ...prev, [postId]: null }));
     setCommentImagePreviews(prev => ({ ...prev, [postId]: null }));
     trackInterest(posts.find(p => p.id === postId)?.category || "general");
     
-    loadComments(postId);
+    loadComments(postId); 
     loadPosts(); 
   };
 
-  // Add reply - FIXED with Error handling
   const addReply = async () => {
     if (!replyInput.trim() || !replyingTo || !currentUserId) return;
+    
     const { error } = await supabase.from("post_comments").insert({
       post_id: replyingTo.postId,
       user_id: currentUserId,
@@ -506,11 +555,10 @@ const FeedPage = () => {
     });
     
     if (error) {
-       console.error("Reply Error:", error);
-       toast.error("রিপ্লাই প্রকাশ করতে সমস্যা হয়েছে!");
-       return;
+        toast.error("রিপ্লাই প্রকাশ করতে সমস্যা হয়েছে! পারমিশন চেক করুন।");
+        return;
     }
-    
+
     setReplyInput("");
     setReplyingTo(null);
     loadComments(replyingTo.postId);
@@ -548,7 +596,10 @@ const FeedPage = () => {
     if (data) {
       const reportIds = data.map(r => r.id);
       const { data: replies } = await supabase.from("report_replies" as any).select("*").in("report_id", reportIds).order("created_at", { ascending: true });
-      const enriched = data.map(r => ({ ...r, replies: (replies as any[] || []).filter((rep: any) => rep.report_id === r.id) }));
+      const enriched = data.map(r => ({
+        ...r,
+        replies: (replies as any[] || []).filter((rep: any) => rep.report_id === r.id),
+      }));
       setMyReports(enriched);
     }
   };
@@ -571,30 +622,42 @@ const FeedPage = () => {
 
   const sendReportReply = async (reportId: string) => {
     if (!reportReplyText.trim() || !currentUserId) return;
-    await supabase.from("report_replies" as any).insert({ report_id: reportId, user_id: currentUserId, message: reportReplyText.trim(), is_admin: false });
+    await supabase.from("report_replies" as any).insert({
+      report_id: reportId,
+      user_id: currentUserId,
+      message: reportReplyText.trim(),
+      is_admin: false,
+    });
     setReportReplyText("");
     setReplyToReportId(null);
     loadMyReports();
     toast.success("রিপ্লাই পাঠানো হয়েছে!");
   };
 
-  useEffect(() => { if (currentUserId) loadMyReports(); }, [currentUserId]);
+  useEffect(() => {
+    if (currentUserId) loadMyReports();
+  }, [currentUserId]);
 
   const displayPosts = posts;
 
   const timeAgo = (date: string) => {
-    try { return formatDistanceToNow(new Date(date), { addSuffix: true, locale: bn }); } catch { return ""; }
+    try {
+      return formatDistanceToNow(new Date(date), { addSuffix: true, locale: bn });
+    } catch {
+      return "";
+    }
   };
 
   useEffect(() => {
-    const handler = () => { setReportMenuPostId(null); };
+    const handler = () => {
+      setReportMenuPostId(null);
+    };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, []);
 
   return (
     <div className="bg-background min-h-screen flex flex-col overflow-x-hidden" onClick={() => { if (showReactionPicker) setShowReactionPicker(null); }}>
-      {/* Header */}
       <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border p-3 shadow-sm">
         <div className="max-w-2xl mx-auto flex items-center gap-2">
           <button onClick={() => navigate("/dashboard")} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-lg shrink-0">←</button>
@@ -604,7 +667,9 @@ const FeedPage = () => {
             <Settings size={18} />
           </button>
           <FriendList currentUserId={currentUserId} profiles={profiles} onSelectUser={(uid) => { setProfileUserId(uid); setProfileOpen(true); }} />
-          <button onClick={() => { setShowMyReports(true); loadMyReports(); }} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0 text-muted-foreground" title="আমার রিপোর্ট">🚩</button>
+          <button onClick={() => { setShowMyReports(true); loadMyReports(); }} className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0 text-muted-foreground" title="আমার রিপোর্ট">
+            🚩
+          </button>
           <FeedNotifications currentUserId={currentUserId} profiles={profiles} />
           <button onClick={() => navigate("/chat")} className="relative w-9 h-9 flex items-center justify-center rounded-full bg-secondary border border-border hover:border-primary transition text-sm shrink-0">
             💬
@@ -681,7 +746,10 @@ const FeedPage = () => {
           {postImagePreview && (
             <div className="px-3 pb-2 relative">
               <img src={postImagePreview} alt="প্রিভিউ" className="w-full max-h-60 object-cover rounded-xl border border-border" />
-              <button onClick={() => { setPostImage(null); setPostImagePreview(null); }} className="absolute top-2 right-5 w-7 h-7 rounded-full bg-foreground/60 text-background flex items-center justify-center hover:bg-foreground/80 transition">
+              <button
+                onClick={() => { setPostImage(null); setPostImagePreview(null); }}
+                className="absolute top-2 right-5 w-7 h-7 rounded-full bg-foreground/60 text-background flex items-center justify-center hover:bg-foreground/80 transition"
+              >
                 <X size={14} />
               </button>
             </div>
@@ -737,9 +805,6 @@ const FeedPage = () => {
             const profile = profiles[post.user_id];
             const isMyPost = post.user_id === currentUserId;
             const catInfo = CATEGORIES.find(c => c.value === post.category);
-            
-            // Regex check to render LinkPreview ONLY when an actual URL exists in the text
-            const hasLink = post.content && /(https?:\/\/[^\s]+)/g.test(post.content);
 
             return (
               <div key={post.id} data-post-id={post.id} className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden max-w-full">
@@ -761,14 +826,29 @@ const FeedPage = () => {
                     </div>
                   </div>
                   <div className="relative shrink-0">
-                    <button onClick={(e) => { e.stopPropagation(); setReportMenuPostId(reportMenuPostId === post.id ? null : post.id); }} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground transition text-lg">⋮</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setReportMenuPostId(reportMenuPostId === post.id ? null : post.id); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground transition text-lg"
+                    >
+                      ⋮
+                    </button>
                     {reportMenuPostId === post.id && (
                       <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg z-50 min-w-[140px] py-1 animate-in fade-in zoom-in-95">
                         {isMyPost && (
-                          <button onClick={() => { setDeletePostId(post.id); setReportMenuPostId(null); }} className="w-full px-4 py-2.5 text-left text-xs font-bold text-destructive hover:bg-destructive/10 transition flex items-center gap-2">🗑️ ডিলেট করুন</button>
+                          <button
+                            onClick={() => { setDeletePostId(post.id); setReportMenuPostId(null); }}
+                            className="w-full px-4 py-2.5 text-left text-xs font-bold text-destructive hover:bg-destructive/10 transition flex items-center gap-2"
+                          >
+                            🗑️ ডিলেট করুন
+                          </button>
                         )}
                         {!isMyPost && (
-                          <button onClick={() => { setReportPostId(post.id); setReportMenuPostId(null); }} className="w-full px-4 py-2.5 text-left text-xs font-bold text-amber-600 hover:bg-amber-500/10 transition flex items-center gap-2">🚩 রিপোর্ট করুন</button>
+                          <button
+                            onClick={() => { setReportPostId(post.id); setReportMenuPostId(null); }}
+                            className="w-full px-4 py-2.5 text-left text-xs font-bold text-amber-600 hover:bg-amber-500/10 transition flex items-center gap-2"
+                          >
+                            🚩 রিপোর্ট করুন
+                          </button>
                         )}
                       </div>
                     )}
@@ -777,8 +857,7 @@ const FeedPage = () => {
 
                 <div className="px-3 sm:px-4 pb-3">
                   <p className="text-sm text-foreground font-semibold whitespace-pre-wrap break-words leading-relaxed overflow-hidden">{post.content !== "📷" ? post.content : ""}</p>
-                  {/* Fixed LinkPreview usage */}
-                  {hasLink && <LinkPreview content={post.content} />}
+                  <LinkPreview content={post.content} />
                 </div>
 
                 {post.image_url && (
@@ -848,7 +927,12 @@ const FeedPage = () => {
                     {showReactionPicker === post.id && (
                       <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full left-0 mb-2 bg-card border border-border rounded-2xl shadow-lg px-2 py-1.5 flex gap-1 z-50 animate-in fade-in zoom-in-95 duration-150">
                         {REACTIONS.map(r => (
-                          <button key={r.type} onClick={(e) => { e.stopPropagation(); reactToPost(post, r.type); }} className="text-2xl hover:scale-125 transition-transform active:scale-95 p-1" title={r.label}>
+                          <button
+                            key={r.type}
+                            onClick={(e) => { e.stopPropagation(); reactToPost(post, r.type); }}
+                            className="text-2xl hover:scale-125 transition-transform active:scale-95 p-1"
+                            title={r.label}
+                          >
                             {r.emoji}
                           </button>
                         ))}
@@ -874,7 +958,10 @@ const FeedPage = () => {
                       }
                     </button>
                   </div>
-                  <button onClick={() => toggleComments(post.id)} className="flex-1 py-2.5 text-sm font-bold text-muted-foreground flex items-center justify-center gap-1.5 transition hover:bg-secondary/50 border-l border-border">
+                  <button
+                    onClick={() => toggleComments(post.id)}
+                    className="flex-1 py-2.5 text-sm font-bold text-muted-foreground flex items-center justify-center gap-1.5 transition hover:bg-secondary/50 border-l border-border"
+                  >
                     💬 মন্তব্য
                   </button>
                 </div>
@@ -901,10 +988,19 @@ const FeedPage = () => {
                               </div>
                               <div className="flex items-center gap-3 mt-1 px-1">
                                 <span className="text-[10px] text-muted-foreground">{timeAgo(comment.created_at)}</span>
-                                <button onClick={() => toggleCommentLike(comment)} className={`text-[10px] font-bold transition ${comment.liked_by_me ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}>
+                                <button
+                                  onClick={() => toggleCommentLike(comment)}
+                                  className={`text-[10px] font-bold transition ${comment.liked_by_me ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}
+                                >
                                   {comment.liked_by_me ? "❤️" : "লাইক"} {comment.likes_count > 0 && `(${comment.likes_count})`}
                                 </button>
-                                <button onClick={() => { setReplyingTo({ commentId: comment.id, postId: post.id, name: profiles[comment.user_id]?.name || "অজানা" }); setTimeout(() => replyInputRef.current?.focus(), 100); }} className="text-[10px] font-bold text-muted-foreground hover:text-primary transition">
+                                <button
+                                  onClick={() => {
+                                    setReplyingTo({ commentId: comment.id, postId: post.id, name: profiles[comment.user_id]?.name || "অজানা" });
+                                    setTimeout(() => replyInputRef.current?.focus(), 100);
+                                  }}
+                                  className="text-[10px] font-bold text-muted-foreground hover:text-primary transition"
+                                >
                                   রিপ্লাই
                                 </button>
                               </div>
@@ -926,7 +1022,10 @@ const FeedPage = () => {
                                         </div>
                                         <div className="flex items-center gap-3 mt-0.5 px-1">
                                           <span className="text-[9px] text-muted-foreground">{timeAgo(reply.created_at)}</span>
-                                          <button onClick={() => toggleCommentLike(reply)} className={`text-[9px] font-bold transition ${reply.liked_by_me ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}>
+                                          <button
+                                            onClick={() => toggleCommentLike(reply)}
+                                            className={`text-[9px] font-bold transition ${reply.liked_by_me ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}
+                                          >
                                             {reply.liked_by_me ? "❤️" : "লাইক"} {reply.likes_count > 0 && `(${reply.likes_count})`}
                                           </button>
                                         </div>
@@ -966,7 +1065,10 @@ const FeedPage = () => {
                           {commentImagePreviews[post.id] && (
                             <div className="relative w-12 h-12 shrink-0">
                               <img src={commentImagePreviews[post.id]!} alt="" className="w-12 h-12 rounded-lg object-cover border border-border" />
-                              <button onClick={() => { setCommentImages(prev => ({ ...prev, [post.id]: null })); setCommentImagePreviews(prev => ({ ...prev, [post.id]: null })); }} className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[8px]">✕</button>
+                              <button
+                                onClick={() => { setCommentImages(prev => ({ ...prev, [post.id]: null })); setCommentImagePreviews(prev => ({ ...prev, [post.id]: null })); }}
+                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[8px]"
+                              >✕</button>
                             </div>
                           )}
                           {featureSettings.feature_comment_images && (
@@ -1001,7 +1103,13 @@ const FeedPage = () => {
         </>
         )}
       </div>
-      <DeleteConfirmDialog open={deletePostId !== null} onOpenChange={(open) => !open && setDeletePostId(null)} onConfirm={() => { if (deletePostId) deletePost(deletePostId); }} title="পোস্ট ডিলেট করবেন?" description="এই পোস্টটি স্থায়ীভাবে মুছে ফেলা হবে।" />
+      <DeleteConfirmDialog
+        open={deletePostId !== null}
+        onOpenChange={(open) => !open && setDeletePostId(null)}
+        onConfirm={() => { if (deletePostId) deletePost(deletePostId); }}
+        title="পোস্ট ডিলেট করবেন?"
+        description="এই পোস্টটি স্থায়ীভাবে মুছে ফেলা হবে।"
+      />
       <UserProfileDialog userId={profileUserId} open={profileOpen} onOpenChange={setProfileOpen} />
       <FeedSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} currentUserId={currentUserId} profiles={profiles} />
 
@@ -1010,10 +1118,17 @@ const FeedPage = () => {
           <div className="bg-card rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-in fade-in zoom-in-95" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-black text-foreground mb-1">🚩 পোস্ট রিপোর্ট করুন</h3>
             <p className="text-xs text-muted-foreground mb-4">এই পোস্টে কী সমস্যা? কারণ লিখুন।</p>
-            <textarea value={reportReason} onChange={e => setReportReason(e.target.value)} placeholder="রিপোর্টের কারণ বিস্তারিত লিখুন..." className="w-full p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-foreground resize-none h-24 focus:border-primary transition" />
+            <textarea
+              value={reportReason}
+              onChange={e => setReportReason(e.target.value)}
+              placeholder="রিপোর্টের কারণ বিস্তারিত লিখুন..."
+              className="w-full p-3 rounded-xl bg-secondary border border-border outline-none text-sm font-bold text-foreground resize-none h-24 focus:border-primary transition"
+            />
             <div className="flex gap-2 mt-4">
               <button onClick={() => setReportPostId(null)} className="flex-1 py-3 rounded-xl bg-secondary text-foreground font-bold hover:bg-secondary/80 transition">বাতিল</button>
-              <button onClick={submitReport} disabled={!reportReason.trim() || reportSending} className="flex-1 py-3 rounded-xl bg-destructive text-destructive-foreground font-bold hover:opacity-90 transition disabled:opacity-50">{reportSending ? "..." : "রিপোর্ট পাঠান"}</button>
+              <button onClick={submitReport} disabled={!reportReason.trim() || reportSending} className="flex-1 py-3 rounded-xl bg-destructive text-destructive-foreground font-bold hover:opacity-90 transition disabled:opacity-50">
+                {reportSending ? "..." : "রিপোর্ট পাঠান"}
+              </button>
             </div>
           </div>
         </div>
@@ -1052,6 +1167,7 @@ const FeedPage = () => {
                       <p className="text-xs text-foreground">{report.admin_note}</p>
                     </div>
                   )}
+
                   {report.replies && report.replies.length > 0 && (
                     <div className="mt-2 space-y-1.5">
                       {report.replies.map((rep: any) => (
@@ -1062,6 +1178,7 @@ const FeedPage = () => {
                       ))}
                     </div>
                   )}
+
                   {report.reply_enabled && report.status !== 'pending' && (
                     <div className="mt-2">
                       {replyToReportId === report.id ? (
