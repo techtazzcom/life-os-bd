@@ -93,17 +93,23 @@ const ChatPage = () => {
   const currentUserIdRef = useRef("");
   const [sendingImage, setSendingImage] = useState(false);
 
-  const renderUserStatus = (lastSeen: string | null | undefined) => {
-  if (!lastSeen) return <span className="text-muted-foreground text-xs">অফলাইন</span>;
+const renderUserStatus = (lastSeen: string | null | undefined) => {
+    if (!lastSeen) return <span className="text-muted-foreground text-[10px]">অফলাইন</span>;
+    const lastSeenDate = new Date(lastSeen);
+    const now = new Date();
+    const isOnline = (now.getTime() - lastSeenDate.getTime()) < 5 * 60 * 1000;
 
-  const lastSeenDate = new Date(lastSeen);
-  const now = new Date();
-  const diffInMinutes = (now.getTime() - lastSeenDate.getTime()) / (1000 * 60);
+    if (isOnline) {
+      return <span className="text-emerald-500 text-[10px] font-bold">🟢 অনলাইন</span>;
+    }
+    return (
+      <span className="text-muted-foreground text-[10px]">
+        {formatDistanceToNow(lastSeenDate, { addSuffix: true, locale: bn })}
+      </span>
+    );
+  };
 
-  // যদি ইউজার গত ৩ মিনিটের মধ্যে অ্যাক্টিভ থাকে, তবে "অনলাইন" দেখাবে
-  if (diffInMinutes <= 3) {
-    return <span className="text-emerald-500 text-xs font-bold">🟢 অনলাইন</span>;
-  }
+  return (
 
   // ৩ মিনিটের বেশি হলে "কতক্ষণ আগে ছিল" তা বাংলায় দেখাবে
   return (
