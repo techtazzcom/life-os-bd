@@ -109,17 +109,6 @@ const renderUserStatus = (lastSeen: string | null | undefined) => {
     );
   };
 
-  return (
-
-  // ৩ মিনিটের বেশি হলে "কতক্ষণ আগে ছিল" তা বাংলায় দেখাবে
-  return (
-    <span className="text-muted-foreground text-xs">
-      {formatDistanceToNow(lastSeenDate, { addSuffix: true, locale: bn })}
-    </span>
-  );
-};
-
-
   // Group chat state
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groups, setGroups] = useState<ChatGroup[]>([]);
@@ -1270,7 +1259,14 @@ const renderUserStatus = (lastSeen: string | null | undefined) => {
                         className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition ${isSelected ? 'bg-primary/10 border border-primary/30' : 'hover:bg-secondary border border-transparent'}`}
                       >
                         <UserAvatar name={u.name} avatarUrl={u.avatar_url} size={36} />
-                        <span className="text-sm font-bold text-foreground flex-1 text-left truncate">{u.name}</span>
+                        {/* অনলাইন থাকলে সবুজ বাতি, নাহলে কতক্ষণ আগে ছিল তা দেখাবে */}
+{isUserActuallyOnline(profile) ? (
+  <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" title="Online" />
+) : (
+  <span className="text-[10px] text-muted-foreground shrink-0">
+    {profile?.last_seen ? timeAgo(profile.last_seen) : "অফলাইন"}
+  </span>
+)}
                         {isSelected && <span className="text-primary text-lg">✓</span>}
                       </button>
                     );
