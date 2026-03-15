@@ -39,6 +39,7 @@ interface Props {
   userId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isOnline?: boolean; // রিয়েল-টাইম অনলাইন স্ট্যাটাস রিসিভ করার জন্য নতুন prop
 }
 
 const InfoRow = ({
@@ -68,7 +69,7 @@ const InfoRow = ({
   );
 };
 
-const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
+const UserProfileDialog = ({ userId, open, onOpenChange, isOnline }: Props) => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -147,16 +148,17 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
     } catch { return dateStr; }
   };
 
+  // আপডেট করা Last Seen ফরমেট
   const formatLastSeen = (dateStr?: string | null) => {
     if (!dateStr) return null;
     try {
       const d = new Date(dateStr);
       const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
-      if (diffMin < 1) return "এইমাত্র";
-      if (diffMin < 60) return `${diffMin} মিনিট আগে`;
+      if (diffMin < 1) return "এইমাত্র সক্রিয়";
+      if (diffMin < 60) return `${diffMin} মিনিট আগে সক্রিয়`;
       const diffHr = Math.floor(diffMin / 60);
-      if (diffHr < 24) return `${diffHr} ঘন্টা আগে`;
-      return d.toLocaleDateString("bn-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      if (diffHr < 24) return `${diffHr} ঘন্টা আগে সক্রিয়`;
+      return d.toLocaleDateString("bn-BD", { month: "short", day: "numeric" }) + " সক্রিয়";
     } catch { return null; }
   };
 
@@ -274,6 +276,9 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
   const showEmail = isOwnProfile || !profile?.hide_email;
   const showMobile = isOwnProfile || !profile?.hide_mobile;
 
+  // ChatPage থেকে আসা রিয়েল-টাইম অনলাইন স্ট্যাটাসকে অগ্রাধিকার দেওয়া হচ্ছে
+  const isUserActuallyOnline = isOnline !== undefined ? isOnline : profile?.is_online;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden border-0">
@@ -295,14 +300,15 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
                   </div>
                 )}
               </div>
-              {profile.is_online && (
-                <span className="absolute top-[88px] left-1/2 translate-x-[18px] w-4 h-4 bg-green-500 border-2 border-background rounded-full animate-pulse" />
+              {/* সবুজ বাতি (Green Dot) */}
+              {isUserActuallyOnline && (
+                <span className="absolute top-[88px] left-1/2 translate-x-[18px] w-4 h-4 bg-green-500 border-2 border-background rounded-full animate-pulse z-10" />
               )}
               <DialogHeader>
                 <DialogTitle className="text-xl font-black text-foreground flex items-center justify-center gap-2">
                   {profile.name}
                   {profile.is_verified && <BadgeCheck size={20} className="text-blue-500 shrink-0" />}
-                  {profile.is_online && (
+                  {isUserActuallyOnline && (
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500">
                       <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
                       অনলাইন
@@ -310,7 +316,8 @@ const UserProfileDialog = ({ userId, open, onOpenChange }: Props) => {
                   )}
                 </DialogTitle>
               </DialogHeader>
-              {!profile.is_online && (
+              {/* অফলাইন থাকলে সময় দেখাবে */}
+              {!isUserActuallyOnline && (
                 <p className="text-xs font-bold mt-1 text-muted-foreground">
                   ⚫ {formatLastSeen(profile.last_seen) || 'অফলাইন'}
                 </p>
