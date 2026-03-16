@@ -230,31 +230,33 @@ const ChatPage = () => {
     e.target.value = "";
   };
 
- const formatLastSeen = (dateStr: string | null | undefined) => {
-  if (!dateStr) return <span style={{ color: "gray" }}>অফলাইন</span>;
-  
-  const d = new Date(dateStr);
-  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  const formatTime = (dateStr: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "এইমাত্র";
+    if (mins < 60) return `${mins}মি`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}ঘ`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}দিন`;
+    return d.toLocaleDateString("bn-BD", { day: "numeric", month: "short" });
+  };
 
-  // অনলাইন থাকলে সবুজ বাতি (ব্লিঙ্কিং ইফেক্টসহ)
-  if (mins < 1) {
-    return (
-      <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "#16a34a", fontWeight: "500" }}>
-        <span style={{ position: "relative", display: "flex", height: "10px", width: "10px" }}>
-          <span style={{ position: "absolute", height: "100%", width: "100%", borderRadius: "50%", backgroundColor: "#4ade80", opacity: 0.75, animation: "ping 1s cubic-bezier(0, 0, 0.2, 1) infinite" }}></span>
-          <span style={{ position: "relative", borderRadius: "50%", height: "10px", width: "10px", backgroundColor: "#22c55e" }}></span>
-        </span>
-        অনলাইন
-      </span>
-    );
-  }
+  const formatMsgTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" });
 
-  // বাকি সব আগের মতোই থাকবে
-  if (mins < 60) return `${mins} মি. আগে সক্রিয়`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} ঘ. আগে সক্রিয়`;
-  return d.toLocaleDateString("bn-BD", { day: "numeric", month: "short" }) + " সক্রিয়";
-};
+  const formatLastSeen = (dateStr: string | null | undefined) => {
+    if (!dateStr) return "অফলাইন";
+    const d = new Date(dateStr);
+    const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return "সবেমাত্র সক্রিয়";
+    if (mins < 60) return `${mins} মি. আগে সক্রিয়`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} ঘ. আগে সক্রিয়`;
+    return d.toLocaleDateString("bn-BD", { day: "numeric", month: "short" }) + " সক্রিয়";
+  };
 
   // ===== GROUP CHAT FUNCTIONS =====
   const loadGroups = useCallback(async () => {
