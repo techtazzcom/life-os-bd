@@ -442,10 +442,7 @@ const ChatPage = () => {
                       </div>
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center justify-between gap-2">
-                          <div className={`flex items-center gap-1.5 min-w-0 ${conv.unreadCount > 0 ? 'font-bold text-foreground' : 'font-medium text-foreground'}`}>
-                            <p className="text-[14px] truncate">{conv.user.name}</p>
-                            {conv.user.is_online && <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e] shrink-0"></span>}
-                          </div>
+                          <p className={`text-[14px] truncate ${conv.unreadCount > 0 ? 'font-bold text-foreground' : 'font-medium text-foreground'}`}>{conv.user.name}</p>
                           {conv.lastMessageTime && <span className={`text-[11px] shrink-0 ${conv.unreadCount > 0 ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>{formatTime(conv.lastMessageTime)}</span>}
                         </div>
                         <div className="flex items-center gap-1 mt-0.5">
@@ -602,10 +599,7 @@ const ChatPage = () => {
                     className="min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }}
                   >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <p className="font-bold text-[15px] text-foreground truncate leading-tight">{selectedUser.name}</p>
-                      {selectedUser.is_online && <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e] shrink-0"></span>}
-                    </div>
+                    <p className="font-bold text-[15px] text-foreground truncate leading-tight">{selectedUser.name}</p>
                     <p className="text-[12px] leading-tight mt-0.5">
                       {selectedUser.is_online
                         ? <span className="text-green-500 font-medium">● সক্রিয়</span>
@@ -766,10 +760,7 @@ const ChatPage = () => {
                   <span className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-[3px] border-card rounded-full" />
                 )}
               </div>
-              <div className="flex items-center justify-center gap-1.5">
-                <h3 className="text-lg font-bold text-foreground truncate">{selectedUser.name}</h3>
-                {selectedUser.is_online && <span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e] shrink-0"></span>}
-              </div>
+              <h3 className="text-lg font-bold text-foreground">{selectedUser.name}</h3>
               <p className="text-[13px] text-muted-foreground mt-0.5">
                 {selectedUser.is_online ? "সক্রিয়" : formatLastSeen(selectedUser.last_seen)}
               </p>
@@ -940,10 +931,7 @@ const ChatPage = () => {
                     </div>
                     <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-center justify-between">
-                        <div className={`flex items-center gap-1.5 min-w-0 ${conv.unreadCount > 0 ? 'font-bold text-foreground' : 'font-medium text-foreground'}`}>
-                          <p className="text-[15px] truncate">{conv.user.name}</p>
-                          {conv.user.is_online && <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e] shrink-0"></span>}
-                        </div>
+                        <p className={`text-[15px] truncate ${conv.unreadCount > 0 ? 'font-bold text-foreground' : 'font-medium text-foreground'}`}>{conv.user.name}</p>
                         {conv.lastMessageTime && <span className={`text-[11px] shrink-0 ml-2 ${conv.unreadCount > 0 ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>{formatTime(conv.lastMessageTime)}</span>}
                       </div>
                       {conv.lastMessage ? (
@@ -1052,11 +1040,8 @@ const ChatPage = () => {
                 {selectedUser!.is_online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-card rounded-full" />}
               </button>
               <div className="flex-1 min-w-0" onClick={() => { setProfileUserId(selectedUser.user_id); setProfileOpen(true); }}>
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <p className="font-bold text-[14px] text-foreground truncate leading-tight">{selectedUser.name}</p>
-                  {selectedUser.is_online && <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e] shrink-0"></span>}
-                </div>
-                <p className="text-[11px] leading-tight mt-0.5">
+                <p className="font-bold text-[14px] text-foreground truncate leading-tight">{selectedUser.name}</p>
+                <p className="text-[11px] leading-tight">
                   {selectedUser.is_online ? <span className="text-green-500 font-medium">সক্রিয়</span> : <span className="text-muted-foreground">{formatLastSeen(selectedUser.last_seen)}</span>}
                 </p>
               </div>
@@ -1164,10 +1149,7 @@ const ChatPage = () => {
                   <span className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-[3px] border-background rounded-full" />
                 )}
               </div>
-              <div className="flex items-center justify-center gap-1.5">
-                <h3 className="text-lg font-bold text-foreground truncate">{selectedUser.name}</h3>
-                {selectedUser.is_online && <span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e] shrink-0"></span>}
-              </div>
+              <h3 className="text-lg font-bold text-foreground">{selectedUser.name}</h3>
               <p className="text-[13px] text-muted-foreground mt-0.5">
                 {selectedUser.is_online ? "সক্রিয়" : formatLastSeen(selectedUser.last_seen)}
               </p>
