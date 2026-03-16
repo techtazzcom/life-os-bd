@@ -20,7 +20,10 @@ serve(async (req) => {
     const tasksTotal = (dayData.tasks || []).length;
     const habitsDone = (dayData.habits || []).filter((h: any) => h.checked).length;
     const habitsTotal = (dayData.habits || []).length;
-    const totalExpense = (dayData.expenses || []).reduce((s: number, e: any) => s + (e.amt || 0), 0);
+    
+    // খরচের ক্ষেত্রে amt বা amount দুটোই চেক করা হয়েছে যাতে ভুল না হয়
+    const totalExpense = (dayData.expenses || []).reduce((s: number, e: any) => s + (Number(e.amount || e.amt) || 0), 0);
+    
     const mood = dayData.mood || "না জানানো";
     const water = dayData.water || 0;
     const sleepHours = dayData.sleepHours || 0;
@@ -46,7 +49,8 @@ ${(goals || []).map((g: any) => `  • ${g.title}`).join("\n")}
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        // মডেলটি পরিবর্তন করা হয়েছে যা অধিক স্থিতিশীল
+        model: "gpt-4o-mini", 
         messages: [
           {
             role: "system",
