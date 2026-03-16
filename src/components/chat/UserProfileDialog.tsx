@@ -156,7 +156,7 @@ const UserProfileDialog = ({ userId, open, onOpenChange, isOnline }: Props) => {
     try {
       const d = new Date(dateStr);
       const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
-      if (diffMin < 1) return "এইমাত্র সক্রিয়";
+      if (diffMin < 1) return "🟢";
       if (diffMin < 60) return `${diffMin} মিনিট আগে সক্রিয়`;
       const diffHr = Math.floor(diffMin / 60);
       if (diffHr < 24) return `${diffHr} ঘন্টা আগে সক্রিয়`;
