@@ -236,7 +236,7 @@ const ChatPage = () => {
     const now = new Date();
     const diff = now.getTime() - d.getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "🟢";
+    if (mins < 1) return "সক্রিয়";
     if (mins < 60) return `${mins}মি`;
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `${hours}ঘ`;
@@ -251,7 +251,7 @@ const ChatPage = () => {
     if (!dateStr) return "অফলাইন";
     const d = new Date(dateStr);
     const mins = Math.floor((Date.now() - d.getTime()) / 60000);
-    if (mins < 1) return "🟢";
+    if (mins < 1) return "সক্রিয়";
     if (mins < 60) return `${mins} মি. আগে সক্রিয়`;
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `${hours} ঘ. আগে সক্রিয়`;
@@ -560,7 +560,7 @@ const ChatPage = () => {
                     <p className="font-bold text-[15px] text-foreground truncate leading-tight">{selectedUser.name}</p>
                     <p className="text-[12px] leading-tight mt-0.5">
                       {isUserOnline(selectedUser)
-                        ? <span className="text-green-500 font-medium">🟢</span>
+                        ? <span className="text-green-500 font-medium">সক্রিয়</span>
                         : <span className="text-muted-foreground">{formatLastSeen(selectedUser.last_seen)}</span>
                       }
                     </p>
@@ -674,7 +674,7 @@ const ChatPage = () => {
               </div>
               <h3 className="text-lg font-bold text-foreground">{selectedUser.name}</h3>
               <p className="text-[13px] text-muted-foreground mt-0.5">
-                {isUserOnline(selectedUser) ? "🟢" : formatLastSeen(selectedUser.last_seen)}
+                {isUserOnline(selectedUser) ? "সক্রিয়" : formatLastSeen(selectedUser.last_seen)}
               </p>
             </div>
 
