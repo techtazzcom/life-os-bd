@@ -10,6 +10,8 @@ import { BadgeCheck, UserPlus, MessageCircle, UserCheck, Clock, ShieldBan, Flag,
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { bn } from "date-fns/locale";
 
 interface Profile {
   user_id: string;
@@ -308,23 +310,17 @@ const UserProfileDialog = ({ userId, open, onOpenChange, isOnline }: Props) => {
                 <DialogTitle className="text-xl font-black text-foreground flex items-center justify-center gap-2">
                   {profile.name}
                   {profile.is_verified && <BadgeCheck size={20} className="text-blue-500 shrink-0" />}
-                  {isUserActuallyOnline && (
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500">
-                      <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
-                      অনলাইন
+                  
+                  {/* অনলাইন থাকলে শুধু সবুজ ডট, অফলাইন থাকলে সময় */}
+                  {isUserActuallyOnline ? (
+                    <span className="w-3 h-3 bg-green-500 rounded-full shadow-sm animate-pulse" title="অনলাইন"></span>
+                  ) : (
+                    <span className="text-sm font-medium text-muted-foreground ml-1">
+                      {formatLastSeen(profile.last_seen) || 'অফলাইন'}
                     </span>
                   )}
                 </DialogTitle>
               </DialogHeader>
-              {/* অফলাইন থাকলে সময় দেখাবে */}
-              {!isUserActuallyOnline && (
-                <p className="text-xs font-bold mt-1 text-muted-foreground">
-                  ⚫ {formatLastSeen(profile.last_seen) || 'অফলাইন'}
-                </p>
-              )}
-              {profile.intro && (
-                <p className="text-xs text-muted-foreground font-semibold mt-2 italic">"{profile.intro}"</p>
-              )}
 
               {/* Action buttons */}
               {!isOwnProfile && (
